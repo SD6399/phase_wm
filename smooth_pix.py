@@ -4,6 +4,7 @@ from skimage.util import random_noise
 from scipy import interpolate
 from matplotlib import pyplot as plt
 import matplotlib.ticker as ticker
+from statistics import mean
 from skimage.exposure import histogram, equalize_hist
 import re
 import csv
@@ -188,7 +189,7 @@ def disp_pix(coord_x,coord_y,path,kef_avg):
 
         if cnt>0:
             tmp = np.copy(arr)
-        arr = io.imread(path + r"\frame" + str(cnt) + ".png")[coord_x, coord_y, 0]
+        arr = io.imread(path[cnt])[coord_x, coord_y,0]
 
         if cnt == 0:
             list_diff.append(0)
@@ -224,13 +225,14 @@ def extract(coord_x,coord_y,alf, tt, rand_fr):
     alf2 = 0.95
 
     count = rand_fr
-
+    zz=[]
     success = True
     while success:
         success, image = vidcap.read()
         if success:
             print('Read a new frame:%d ' % count, success)
             cv2.imwrite(r'C:\Users\user\PycharmProjects\phase_wm\extract\frame%d.png' % count, image[coord_x,coord_y])
+            zz.append(image[coord_x,coord_y])
 
         count += 1
 
@@ -245,7 +247,7 @@ def extract(coord_x,coord_y,alf, tt, rand_fr):
 
     # первичное сглаживание
     disp_list=[]
-    disp_list = disp_pix(coord_x, coord_y, r"C:\Users\user\PycharmProjects\phase_wm\extract", 4)
+    disp_list = disp_pix(coord_x, coord_y, zz, 4)
     disp_list.insert(0, 0)
     disp_list.append(3000)
 
