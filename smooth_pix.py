@@ -88,31 +88,6 @@ def disp(path):
     return list_diff
 
 
-def disp_pix(path,coord_x,coord_y):
-    cnt = 1
-    arr = np.array([])
-
-    list_diff = []
-    while cnt < 3000:
-        tmp = np.copy(arr[coord_x,coord_y])
-        arr = io.imread(path + str(cnt) + ".png").astype(float)[coord_x,coord_y]
-
-        diff_pix = np.abs(arr - tmp)
-        print(np.mean(diff_pix), " frame ", cnt)
-        list_diff.append(np.mean(diff_pix))
-        cnt += 1
-
-    avg = sum(list_diff) / len(list_diff)
-    print(avg)
-    upd_start = []
-    for i in range(len(list_diff)):
-        if abs((list_diff[i])) > (4 * avg):
-            upd_start.append(i)
-
-    print("frame with change scene", upd_start)
-    return list_diff
-
-
 def read_video(path):
     vidcap = cv2.VideoCapture(path)
     count = 0
@@ -181,15 +156,15 @@ stop_kadr3 = []
 stop_kadr4 = []
 stop_kadr5 = []
 
-def disp_pix(coord_x,coord_y,path,kef_avg):
+def disp_pix(list_pix,kef_avg):
     cnt=0
     count=3000
     list_diff=[]
     while cnt < count:
 
         if cnt>0:
-            tmp = np.copy(arr)
-        arr = io.imread(path[cnt])[coord_x, coord_y,0]
+            tmp =arr
+        arr = list_pix[cnt][0]
 
         if cnt == 0:
             list_diff.append(0)
@@ -197,7 +172,7 @@ def disp_pix(coord_x,coord_y,path,kef_avg):
         else:
             diff_img = np.abs(int(arr) - int(tmp))
             #print(diff_img, " frame ", cnt)
-            list_diff.append(np.mean(diff_img))
+            list_diff.append(diff_img)
 
         cnt+=1
 
@@ -214,27 +189,34 @@ def disp_pix(coord_x,coord_y,path,kef_avg):
     return list_big_diap
 
 
+PATH_VIDEO = r'C:\Users\user\PycharmProjects\phase_wm\frames_after_emb\RB_codH264.mp4'
+vidcap = cv2.VideoCapture(PATH_VIDEO)
+vidcap.open(PATH_VIDEO)
 
-def extract(coord_x,coord_y,alf, tt, rand_fr):
-    PATH_VIDEO = r'C:\Users\user\PycharmProjects\phase_wm\frames_after_emb\RB_codH264.mp4'
-    vidcap = cv2.VideoCapture(PATH_VIDEO)
-    vidcap.open(PATH_VIDEO)
+alf0 = 0.96
+betta = 0.999
+alf2 = 0.95
 
-    alf0 = 0.96
-    betta = 0.999
-    alf2 = 0.95
-
-    count = rand_fr
-    zz=[]
-    success = True
-    while success:
-        success, image = vidcap.read()
+count = 0
+matrix_for_all_frame =np.array([])
+success = True
+while success:
+    success, image = vidcap.read()
+    if count==0:
+        matrix_for_all_frame=image
+        matrix_for_all_frame = matrix_for_all_frame[np.newaxis]
+    else:
         if success:
+            image = image[np.newaxis]
             print('Read a new frame:%d ' % count, success)
-            cv2.imwrite(r'C:\Users\user\PycharmProjects\phase_wm\extract\frame%d.png' % count, image[coord_x,coord_y])
-            zz.append(image[coord_x,coord_y])
+            matrix_for_all_frame= np.append(matrix_for_all_frame,image,axis=0)
 
-        count += 1
+    count += 1
+
+np.save(r'C:\Users\user\PycharmProjects\phase_wm\all_frame.npy', matrix_for_all_frame)
+
+matrix_for_all_frame = np.load(r'C:\Users\user\PycharmProjects\phase_wm\all_frame.npy')
+def extract(coord_x,coord_y,alf, tt, rand_fr):
 
     count = 3000
 
@@ -246,15 +228,16 @@ def extract(coord_x,coord_y,alf, tt, rand_fr):
     d1=d.copy()
 
     # первичное сглаживание
-    disp_list=[]
-    disp_list = disp_pix(coord_x, coord_y, zz, 4)
+
+    disp_list = disp_pix( matrix_for_all_frame[:,coord_x,coord_y,:], 4)
     disp_list.insert(0, 0)
     disp_list.append(3000)
 
+    list_aft_1_smooth= []
     for scene in range(1, len(change_sc)):
         cnt = change_sc[scene - 1]
         while cnt < change_sc[scene]:
-            arr = io.imread(r"C:\Users\user\PycharmProjects\phase_wm\extract/frame" + str(cnt) + ".png")
+            arr = matrix_for_all_frame[cnt,coord_x,coord_y,:]
             a = arr
             #g1=d1 # !!!!!!!!!!!!!
             d1 = f1
@@ -267,11 +250,7 @@ def extract(coord_x,coord_y,alf, tt, rand_fr):
             # else:
             #     f1 = (1-alf)*(1-alf)*a+(1-alf)*alf*d1+alf*g1
 
-            f1[f1 > 255] = 255
-            f1[f1 < 0] = 0
-            img = Image.fromarray(f1.astype('uint8'))
-            img.save(r'C:\Users\user\PycharmProjects\phase_wm\extract\first_smooth/result' + str(cnt) + '.png')
-            print("tmp kadr", cnt)
+            list_aft_1_smooth.append(f1)
             cnt += 1
 
     cnt = rand_fr
@@ -279,11 +258,13 @@ def extract(coord_x,coord_y,alf, tt, rand_fr):
     # вычитание усреднённого
     while cnt < count:
 
-        arr = io.imread(r"C:\Users\user\PycharmProjects\phase_wm\extract\frame" + str(cnt) + ".png")
+        arr = np.array(matrix_for_all_frame[cnt,coord_x,coord_y])
+        arr = np.reshape(arr, (1, 1, 3))
 
         a = cv2.cvtColor(arr, cv2.COLOR_RGB2YCrCb)
         a1 = np.asarray([])
-        f1=np.float32(io.imread(r"C:\Users\user\PycharmProjects\phase_wm\extract\first_smooth\result" + str(cnt) + ".png"))
+        f1=np.array(list_aft_1_smooth[cnt])
+        f1 = np.reshape(f1, (1, 1, 3))
         #f1=np.float32(f1)
         f1 = cv2.cvtColor(f1, cv2.COLOR_RGB2YCrCb)
         a1 = np.where(a < f1, 0, a - f1)
@@ -300,7 +281,7 @@ def extract(coord_x,coord_y,alf, tt, rand_fr):
         if cnt == rand_fr:
             f = a[:, :, 0]
             d = f.copy()
-            d = np.ones(1)
+
 
         else:
             if cnt == rand_fr + 1:
@@ -316,6 +297,7 @@ def extract(coord_x,coord_y,alf, tt, rand_fr):
 
         fi = np.where(c < 0, np.arctan((s / c)) + np.pi,
                       np.where(s >= 0, np.arctan((s / c)), np.arctan((s / c)) + 2 * np.pi))
+        fi=np.nan_to_num(f1)
         fi = np.where(fi < -np.pi / 4, fi + 2 * np.pi, fi)
         fi = np.where(fi > 9 * np.pi / 4, fi - 2 * np.pi, fi)
         wm = 255 * fi / 2 / math.pi
@@ -408,8 +390,8 @@ def extract(coord_x,coord_y,alf, tt, rand_fr):
 
         cnt += 1
 
-    print(l_kadr)
-    print(coord_x,coord_y)
+
+    print("КООРДИНАТЫ ",coord_x,coord_y, "ЗНАЧЕНИЕ ПИКСЕЛА ", l_kadr)
 
     return l_kadr
 
@@ -516,7 +498,7 @@ count = 3000
 
 
 hm_list=[]
-while alfa < 0.92:
+while alfa < 0.72:
     sp = []
     my_matrix=np.zeros((1040,1040))
     for i in range(1040):
@@ -524,6 +506,7 @@ while alfa < 0.92:
             my_matrix[i,j] = extract(i,j,alfa, tetta, rand_k)
 
     print("all")
+    np.save(r'C:\Users\user\PycharmProjects\phase_wm\final_extract.npy', my_matrix)
     print(my_matrix)
     hand_made= [0,118,404,414,524,1002,1391,1492,1972,2393,2466,2999]
     exit_list=[]
