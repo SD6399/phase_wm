@@ -4,6 +4,7 @@ from skimage.util import random_noise
 from scipy import interpolate
 from matplotlib import pyplot as plt
 import matplotlib.ticker as ticker
+from itertools import chain
 from statistics import mean
 from skimage.exposure import histogram, equalize_hist
 import re
@@ -51,7 +52,7 @@ def img2bin(img):
 
 
 def big2small(st_qr):
-    qr = np.zeros((65, 65, 3))
+    qr = np.zeros((65, 65))
 
     for i in range(0, 1040, size_quadr):
         for j in range(0, 1040, size_quadr):
@@ -60,32 +61,27 @@ def big2small(st_qr):
     return qr
 
 
-def disp(path):
+def disp(path,coord_x,coord_y, kef):
     cnt = 0
     arr = np.array([])
 
-    list_diff = []
+    list_diff = np.array([])
     while cnt < 3000:
         tmp = np.copy(arr)
-        arr = io.imread(path + str(cnt) + ".png").astype(float)
+        arr = io.imread(path + str(cnt) + ".png")[coord_x:coord_x+16,coord_y:coord_y+16].astype(float)
         if cnt == 0:
-            list_diff.append(0)
+            list_diff=np.append(list_diff,0)
 
         else:
-            diff_img = np.abs(arr - tmp)
-            print(np.mean(diff_img), " frame ", cnt)
-            list_diff.append(np.mean(diff_img))
+            list_diff=np.append(list_diff,np.mean(np.abs(arr - tmp)))
         cnt += 1
 
-    avg = sum(list_diff) / len(list_diff)
-    print(avg)
-    upd_start = []
-    for i in range(len(list_diff)):
-        if abs((list_diff[i])) > (4 * avg):
-            upd_start.append(i)
+    avg = np.mean(list_diff)
+    print(coord_x,coord_y)
 
-    print("frame with change scene", upd_start)
-    return list_diff
+    upd_start=np.where(list_diff>kef*avg)
+
+    return upd_start
 
 
 def read_video(path):
@@ -156,6 +152,7 @@ stop_kadr3 = []
 stop_kadr4 = []
 stop_kadr5 = []
 
+
 def disp_pix(list_pix,kef_avg):
     cnt=0
     count=3000
@@ -185,7 +182,7 @@ def disp_pix(list_pix,kef_avg):
            list_big_diap.append(i)
 
 
-    print(len(list_big_diap))
+
     return list_big_diap
 
 
@@ -197,28 +194,59 @@ alf0 = 0.96
 betta = 0.999
 alf2 = 0.95
 
+#
+# count = 0
+# success = True
+# while success:
+#     success, image = vidcap.read()
+#     if success:
+#         cv2.imwrite(r'C:\Users\user\PycharmProjects\phase_wm\extract_for_by_pix\frame%d.png' % count, image[20:1060, 440:1480])
+#
+#     count += 1
+
 count = 0
+
 matrix_for_all_frame =np.array([])
-success = True
-while success:
-    success, image = vidcap.read()
-    if count==0:
-        matrix_for_all_frame=image
-        matrix_for_all_frame = matrix_for_all_frame[np.newaxis]
-    else:
-        if success:
-            image = image[np.newaxis]
-            print('Read a new frame:%d ' % count, success)
-            matrix_for_all_frame= np.append(matrix_for_all_frame,image,axis=0)
+# success = True
+# while success:
+#     success, image = vidcap.read()
+#     if count % 200 == 0:
+#         np.save(r'C:\Users\user\PycharmProjects\phase_wm\frame' + str(int(count/200)) +'.npy', matrix_for_all_frame)
+#         matrix_for_all_frame=image
+#         matrix_for_all_frame = matrix_for_all_frame[np.newaxis]
+#
+#     else:
+#         if success:
+#             image = image[np.newaxis]
+#             print('Read a new frame:%d ' % count, success)
+#
+#             matrix_for_all_frame= np.append(matrix_for_all_frame,image,axis=0)
+#
+#     count += 1
 
-    count += 1
 
-np.save(r'C:\Users\user\PycharmProjects\phase_wm\all_frame.npy', matrix_for_all_frame)
 
-matrix_for_all_frame = np.load(r'C:\Users\user\PycharmProjects\phase_wm\all_frame.npy')
-def extract(coord_x,coord_y,alf, tt, rand_fr):
+#for i in range(15):
+# matr1 = np.load(r'C:\Users\user\PycharmProjects\phase_wm\frame' + str(1) + '.npy')
+# matr2 = np.load(r'C:\Users\user\PycharmProjects\phase_wm\frame' + str(2) + '.npy')
+# matr3 = np.load(r'C:\Users\user\PycharmProjects\phase_wm\frame' + str(3) + '.npy')
+# matr4 = np.load(r'C:\Users\user\PycharmProjects\phase_wm\frame' + str(4) + '.npy')
+# matr5 = np.load(r'C:\Users\user\PycharmProjects\phase_wm\frame' + str(5) + '.npy')
+# matr6 = np.load(r'C:\Users\user\PycharmProjects\phase_wm\frame' + str(6) + '.npy')
+# matr7 = np.load(r'C:\Users\user\PycharmProjects\phase_wm\frame' + str(7) + '.npy')
+# matr8 = np.load(r'C:\Users\user\PycharmProjects\phase_wm\frame' + str(8) + '.npy')
+# matr9 = np.load(r'C:\Users\user\PycharmProjects\phase_wm\frame' + str(9) + '.npy')
+# matr10 = np.load(r'C:\Users\user\PycharmProjects\phase_wm\frame' + str(10) + '.npy')
+# matr11 = np.load(r'C:\Users\user\PycharmProjects\phase_wm\frame' + str(11) + '.npy')
+# matr12 = np.load(r'C:\Users\user\PycharmProjects\phase_wm\frame' + str(12) + '.npy')
+# matr13 = np.load(r'C:\Users\user\PycharmProjects\phase_wm\frame' + str(13) + '.npy')
+# matr14 = np.load(r'C:\Users\user\PycharmProjects\phase_wm\frame' + str(14) + '.npy')
+# matr15 = np.load(r'C:\Users\user\PycharmProjects\phase_wm\frame' + str(15) + '.npy')
 
-    count = 3000
+
+def extract(alf, tt, rand_fr):
+
+    count = rand_fr
 
     cnt = rand_fr
     g = np.asarray([])
@@ -227,52 +255,76 @@ def extract(coord_x,coord_y,alf, tt, rand_fr):
     d = g.copy()
     d1=d.copy()
 
-    # первичное сглаживание
+    matr= np.array([])
 
-    disp_list = disp_pix( matrix_for_all_frame[:,coord_x,coord_y,:], 4)
-    disp_list.insert(0, 0)
-    disp_list.append(3000)
+
+    #первичное сглаживание
+
+    success = True
+    # while success:
+    #     success, image = vidcap.read()
+    #     if success:
+    #         print('Read a new frame:%d ' % count, success)
+    #         cv2.imwrite(r'C:\Users\user\PycharmProjects\phase_wm\extract_for_by_pix\frame%d.png' % count, image[20:1060, 440:1480])
+    #
+    #     count += 1
 
     list_aft_1_smooth= []
-    for scene in range(1, len(change_sc)):
-        cnt = change_sc[scene - 1]
-        while cnt < change_sc[scene]:
-            arr = matrix_for_all_frame[cnt,coord_x,coord_y,:]
-            a = arr
-            #g1=d1 # !!!!!!!!!!!!!
-            d1 = f1
-            if cnt == change_sc[scene-1]:
-                f1 = a.copy()
-                d1 = np.zeros(1)
-            #elif cnt == change_sc[scene-1] + 1:
-            else:
-                f1 = np.float32(d1) * alf + np.float32(a) * (1 - alf)
-            # else:
-            #     f1 = (1-alf)*(1-alf)*a+(1-alf)*alf*d1+alf*g1
+    my_matrix1 = np.zeros((1040, 1040,3,3000), dtype=np.float16)
 
-            list_aft_1_smooth.append(f1)
-            cnt += 1
+    for i in range(0,1040,16):
+            for j in range(0,1040,16):
+                pix_on_all_frame = []
 
+                disp_list = disp(r'C:\Users\user\PycharmProjects\phase_wm\extract_for_by_pix\frame',i,j, 4)
+                disp_list= np.insert(disp_list,0, 0)
+                disp_list= np.append(disp_list,3000)
+
+                for scene in range(1, len(disp_list)):
+                    cnt = disp_list[scene - 1]
+                    while cnt < disp_list[scene]:
+                        arr = io.imread(
+                            r'C:\Users\user\PycharmProjects\phase_wm\extract_for_by_pix\frame%d.png' % cnt)[i:i + 16,
+                                    j:j + 16]
+
+                        a = arr
+                        #g1=d1 # !!!!!!!!!!!!!
+                        d1 = f1
+                        if cnt == disp_list[scene-1]:
+                            f1 = a.copy()
+                            d1 = np.zeros(1)
+                        #elif cnt == change_sc[scene-1] + 1:
+                        else:
+                            f1 = np.float32(d1) * alf + np.float32(a) * (1 - alf)
+                        # else:
+                        #     f1 = (1-alf)*(1-alf)*a+(1-alf)*alf*d1+alf*g1
+
+                        my_matrix1[i:i+16, j:j+16,:,cnt] = f1
+                        cnt += 1
+
+    count=3000
     cnt = rand_fr
-
-    # вычитание усреднённого
     while cnt < count:
+        cnt = rand_fr
 
-        arr = np.array(matrix_for_all_frame[cnt,coord_x,coord_y])
-        arr = np.reshape(arr, (1, 1, 3))
+        list_diff = []
+        # вычитание усреднённого
 
+        arr = my_matrix1[:,:,:,cnt]
+        arr = np.float32(arr)
         a = cv2.cvtColor(arr, cv2.COLOR_RGB2YCrCb)
         a1 = np.asarray([])
-        f1=np.array(list_aft_1_smooth[cnt])
-        f1 = np.reshape(f1, (1, 1, 3))
-        #f1=np.float32(f1)
+        f1=io.imread(r'C:\Users\user\PycharmProjects\phase_wm\extract_for_by_pix\frame%d.png' % count)
+        f1 = np.float32(f1)
         f1 = cv2.cvtColor(f1, cv2.COLOR_RGB2YCrCb)
         a1 = np.where(a < f1, 0, a - f1)
+        list_diff.append(a1)
 
-        print("diff", cnt)
+
+
 
         # извлечение ЦВЗ
-        arr = a1
+        arr = my_matrix1[:,:,:,cnt]
         a = arr
 
         g = d
@@ -297,7 +349,7 @@ def extract(coord_x,coord_y,alf, tt, rand_fr):
 
         fi = np.where(c < 0, np.arctan((s / c)) + np.pi,
                       np.where(s >= 0, np.arctan((s / c)), np.arctan((s / c)) + 2 * np.pi))
-        fi=np.nan_to_num(f1)
+        fi=np.nan_to_num(fi)
         fi = np.where(fi < -np.pi / 4, fi + 2 * np.pi, fi)
         fi = np.where(fi > 9 * np.pi / 4, fi - 2 * np.pi, fi)
         wm = 255 * fi / 2 / math.pi
@@ -388,12 +440,34 @@ def extract(coord_x,coord_y,alf, tt, rand_fr):
         fi_tmp[fi_tmp > np.pi] = np.pi
         l_kadr = fi_tmp * 255 / np.pi
 
+        small_frame = big2small(l_kadr)
+
+        cp = small_frame.copy()
+        our_avg = np.mean(cp)
+
+        k = -1
+        matr_avg = np.zeros((33, 33))
+        for i in range(0, 33):
+            for j in range(0, 33):
+                k += 1
+                # matr_avg[int(i / 16), int(j / 16)] = np.mean(cp[i:i + 16, j:j + 16])
+                if cp[i, j] > our_avg:
+                    cp[i, j] = 255
+                else:
+                    cp[i, j] = 0
+
+        imgc = Image.fromarray(cp.astype('uint8'))
+
+        imgc.save(
+            r"C:\Users\user\PycharmProjects\phase_wm\extract/first_smooth_by_scene/1/result" + str(cnt) + ".png")
+
+        if cnt % 200 == 199:
+            stop_kadr1.append(compare(
+                r"C:\Users\user\PycharmProjects\phase_wm\extract/after_normal_phas_bin/1/result" + str(cnt) + ".png"))
+
         cnt += 1
 
-
-    print("КООРДИНАТЫ ",coord_x,coord_y, "ЗНАЧЕНИЕ ПИКСЕЛА ", l_kadr)
-
-    return l_kadr
+    return r"C:\Users\user\PycharmProjects\phase_wm\extract/after_normal_phas_bin/1/result" + str(2999) + ".png"
 
 
 def generate_video():
@@ -471,8 +545,8 @@ i = 1
 my_exit = []
 my_exit1 = []
 my_exit2 = []
-alfa = 0.91
-tetta = 0.3
+alfa = 0.01
+tetta = 0.15
 squ_size = 4
 for_fi = 6
 # dispr=1
@@ -498,39 +572,39 @@ count = 3000
 
 
 hm_list=[]
-while alfa < 0.72:
+while alfa < 0.02:
     sp = []
-    my_matrix=np.zeros((1040,1040))
-    for i in range(1040):
-        for j in range(1040):
-            my_matrix[i,j] = extract(i,j,alfa, tetta, rand_k)
+
+    # embed(i,tetta,count)
+    # generate_video()
+    extract(alfa, tetta, rand_k)
 
     print("all")
-    np.save(r'C:\Users\user\PycharmProjects\phase_wm\final_extract.npy', my_matrix)
-    print(my_matrix)
+
+
     hand_made= [0,118,404,414,524,1002,1391,1492,1972,2393,2466,2999]
     exit_list=[]
     res = np.zeros((65, 65))
     res_bin = np.zeros((65, 65))
     for i in range(1, len(hand_made)):
         print(hand_made[i])
-        tnp = io.imread(r"C:\Users\user\PycharmProjects\phase_wm\extract/wm_after_2_smooth/result" + str(
+        tnp = io.imread(r"C:\Users\user\PycharmProjects\phase_wm\extract/after_normal_phas_bin/1/result" + str(
             hand_made[i]-1 ) + ".png")
         res[tnp >= np.mean(tnp)] += (hand_made[i] - hand_made[i - 1])
         res[tnp < np.mean(tnp)] -= (hand_made[i] - hand_made[i - 1])
         # res2=img2bin(tnp)
         img = Image.fromarray(res.astype('uint8'))
-        img.save(r"C:\Users\user\PycharmProjects\phase_wm\extract/after_normal_phas/sumframe" + str(i) + ".png")
+        img.save(r"C:\Users\user\PycharmProjects\phase_wm\extract/after_normal_phas_bin/1/sumframe" + str(i) + ".png")
 
         # print(compare(r"C:\Users\user\PycharmProjects\phase_wm\extract/after_normal_phas/sumframe" +str(i)+ ".png"), change_sc[i])
         res_bin[res >= 0] = 255
         res_bin[res < 0] = 0
 
         img = Image.fromarray(img2bin(res_bin).astype('uint8'))
-        img.save(r"C:\Users\user\PycharmProjects\phase_wm\extract/after_normal_phas/sumframe_res" + ".png")
-        exit_list.append(compare(r"C:\Users\user\PycharmProjects\phase_wm\extract/after_normal_phas/sumframe_res" + ".png"))
+        img.save(r"C:\Users\user\PycharmProjects\phase_wm\extract/after_normal_phas_bin/1/sumframe_res" + ".png")
+        exit_list.append(compare(r"C:\Users\user\PycharmProjects\phase_wm\extract/after_normal_phas_bin/1/sumframe_res" + ".png"))
     print(exit_list)
-    hm_list.append(compare(r"C:\Users\user\PycharmProjects\phase_wm\extract/after_normal_phas/sumframe_res" + ".png"))
+    hm_list.append(compare(r"C:\Users\user\PycharmProjects\phase_wm\extract/after_normal_phas_bin/1/sumframe_res" + ".png"))
     #print(compare(r"C:\Users\user\PycharmProjects\phase_wm\extract/after_normal_phas_bin/result" + str(i-1) + ".png"))
 
     print("current percent", stop_kadr1)
