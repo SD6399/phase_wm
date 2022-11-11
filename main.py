@@ -72,18 +72,17 @@ def disp(path):
 
         else:
             diff_img = np.abs(arr - tmp)
-            print(np.mean(diff_img), " frame ", cnt)
+
             list_diff.append(np.mean(diff_img))
         cnt += 1
 
     avg = sum(list_diff) / len(list_diff)
-    print(avg)
+
     upd_start = []
     for i in range(len(list_diff)):
         if abs((list_diff[i])) > (4 * avg):
             upd_start.append(i)
 
-    print("frame with change scene", upd_start)
     return list_diff
 
 
@@ -118,7 +117,7 @@ def read_video(path):
     success = True
     while success:
         success, image = vidcap.read()
-        if (success == True):
+        if success:
             cv2.imwrite(r"frames_orig\frame%d.png" % count, image)
 
         print("записан кадр", count)
@@ -143,7 +142,7 @@ def white_black():
 
 def embed(my_i, tt, count):
     cnt = 0
-    PATH_IMG = r'C:\Users\user\PycharmProjects\phase_wm\some_qr.png'
+    PATH_IMG = r'C:\Users\user\PycharmProjects\phase_wm\some_qr_M.png'
     fi = math.pi / 2 / 255
 
     arr1 = cv2.imread(PATH_IMG)
@@ -168,17 +167,10 @@ def embed(my_i, tt, count):
         tmp = cv2.cvtColor(a, cv2.COLOR_YCrCb2RGB)
         img = Image.fromarray(tmp.astype('uint8'))
 
-        print("обработан кадр", cnt)
-        img.convert('RGB').save(r"frames_after_emb\result" + str(cnt) + ".png")
+        img.convert('RGB').save(r"C:\Users\user\PycharmProjects\phase_wm\frames_after_emb\result" + str(cnt) + ".png")
 
         cnt += 1
 
-
-stop_kadr1 = []
-stop_kadr2 = []
-stop_kadr3 = []
-stop_kadr4 = []
-stop_kadr5 = []
 
 
 def extract(alf, tt, my_i, rand_fr):
@@ -193,14 +185,14 @@ def extract(alf, tt, my_i, rand_fr):
     count = 0
     count = rand_fr
 
-    # success = True
-    # while success:
-    #     success, image = vidcap.read()
-    #     if success:
-    #         print('Read a new frame:%d ' % count, success)
-    #         cv2.imwrite(r'C:\Users\user\PycharmProjects\phase_wm\extract\frame%d.png' % count, image[20:1060, 440:1480])
-    #
-    #     count += 1
+    success = True
+    while success:
+        success, image = vidcap.read()
+        if success:
+
+            cv2.imwrite(r'C:\Users\user\PycharmProjects\phase_wm\extract\frame%d.png' % count, image[20:1060, 440:1480])
+
+        count += 1
 
     count = 3000
 
@@ -213,17 +205,42 @@ def extract(alf, tt, my_i, rand_fr):
 
     # первичное сглаживание
 
+    # for scene in range(1, len(change_sc)):
+    #     cnt = change_sc[scene - 1]
+    # while cnt < count:
+    #     arr = io.imread(r"C:\Users\user\PycharmProjects\phase_wm\extract/frame" + str(cnt) + ".png")
+    #     a = arr
+    #     #g1=d1 # !!!!!!!!!!!!!
+    #     d1 = f1
+    #     if cnt == 0:
+    #         f1 = a.copy()
+    #         d1 = np.zeros((1040, 1040))
+    #     #elif cnt == change_sc[scene-1] + 1:
+    #     else:
+    #         f1 = np.float32(d1) * alf + np.float32(a) * (1 - alf)
+    #     # else:
+    #     #     f1 = (1-alf)*(1-alf)*a+(1-alf)*alf*d1+alf*g1
+    #
+    #     f1[f1 > 255] = 255
+    #     f1[f1 < 0] = 0
+    #     img = Image.fromarray(f1.astype('uint8'))
+    #     img.save(r'C:\Users\user\PycharmProjects\phase_wm\extract\first_smooth/result' + str(cnt) + '.png')
+    #     print("tmp kadr", cnt)
+    #     cnt += 1
+
+    cnt = 0
+
     for scene in range(1, len(change_sc)):
         cnt = change_sc[scene - 1]
         while cnt < change_sc[scene]:
             arr = io.imread(r"C:\Users\user\PycharmProjects\phase_wm\extract/frame" + str(cnt) + ".png")
             a = arr
-            #g1=d1 # !!!!!!!!!!!!!
+            # g1=d1 # !!!!!!!!!!!!!
             d1 = f1
             if cnt == change_sc[scene-1]:
                 f1 = a.copy()
                 d1 = np.zeros((1040, 1040))
-            #elif cnt == change_sc[scene-1] + 1:
+            # elif cnt == change_sc[scene-1] + 1:
             else:
                 f1 = np.float32(d1) * alf + np.float32(a) * (1 - alf)
             # else:
@@ -233,8 +250,11 @@ def extract(alf, tt, my_i, rand_fr):
             f1[f1 < 0] = 0
             img = Image.fromarray(f1.astype('uint8'))
             img.save(r'C:\Users\user\PycharmProjects\phase_wm\extract\first_smooth/result' + str(cnt) + '.png')
-            print("tmp kadr", cnt)
+
             cnt += 1
+
+
+
 
     cnt = rand_fr
 
@@ -248,13 +268,13 @@ def extract(alf, tt, my_i, rand_fr):
         a = cv2.cvtColor(arr, cv2.COLOR_RGB2YCrCb)
         a1 = np.asarray([])
         f1=np.float32(io.imread(r"C:\Users\user\PycharmProjects\phase_wm\extract\first_smooth\result" + str(cnt) + ".png"))
+        #f1=np.float32(f1)
         f1 = cv2.cvtColor(f1, cv2.COLOR_RGB2YCrCb)
         a1 = np.where(a < f1, 0, a - f1)
 
         # img = Image.fromarray(a1.astype('uint8'))
 
         # img.save(r"D:/dk/res_python/sinus/qwerty/result" + str(cnt) + ".png")
-        print("diff", cnt)
 
         # извлечение ЦВЗ
         arr = a1
@@ -293,7 +313,7 @@ def extract(alf, tt, my_i, rand_fr):
         # a1 = cv2.cvtColor(a1, cv2.COLOR_YCrCb2RGB)
         img = Image.fromarray(a1.astype('uint8'))
         img.save(r'C:\Users\user\PycharmProjects\phase_wm\extract/wm/result' + str(cnt) + '.png')
-        print('made', cnt)
+
 
         # plt.show()
 
@@ -370,7 +390,7 @@ def extract(alf, tt, my_i, rand_fr):
             fi_tmp = np.where(fi_tmp < -np.pi / 4, fi_tmp + 2 * np.pi, fi_tmp)
             fi_tmp = np.where(fi_tmp > 9 * np.pi / 4, fi_tmp - 2 * np.pi, fi_tmp)
 
-        print(my_exit)
+
         fi_tmp[fi_tmp < 0] = 0
         fi_tmp[fi_tmp > np.pi] = np.pi
         l_kadr = fi_tmp * 255 / np.pi
@@ -439,7 +459,7 @@ def extract(alf, tt, my_i, rand_fr):
 
         img = Image.fromarray(f.astype('uint8'))
 
-        print("avg kadr", cnt)
+
         img.save(r"C:\Users\user\PycharmProjects\phase_wm\extract/wm_after_2_smooth/result" + str(cnt) + ".png")
         cnt += 1
 
@@ -470,7 +490,7 @@ def generate_video():
               if img.endswith(".png")]
     sort_name_img = sort_spis(images)
 
-    print(sort_name_img)
+
 
     frame = cv2.imread(os.path.join(image_folder, images[0]))
 
@@ -481,7 +501,7 @@ def generate_video():
 
     cnt = 0
     for image in sort_name_img:
-        print("video is writing", cnt)
+
         video.write(cv2.imread(os.path.join(image_folder, image)))
         cnt += 1
 
@@ -490,7 +510,7 @@ def generate_video():
 
 
 def compare(path):  # сравнивание извлечённого QR с исходным
-    orig_qr = io.imread(r'C:\Users\user\PycharmProjects\phase_wm\some_qr.png')
+    orig_qr = io.imread(r'C:\Users\user\PycharmProjects\phase_wm\some_qr_M.png')
     orig_qr = np.where(orig_qr > 127, 255, 0)
     small_qr = big2small(orig_qr)
     sr_matr = np.zeros((1040, 1040, 3))
@@ -536,8 +556,8 @@ i = 1
 my_exit = []
 my_exit1 = []
 my_exit2 = []
-alfa = 0.91
-tetta = 2.8
+alfa = 0.008
+tetta = 0.05
 squ_size = 4
 for_fi = 6
 # dispr=1
@@ -563,53 +583,22 @@ count = 3000
 
 
 hm_list=[]
-while alfa < 1:
+
+while tetta < 0.32:
+    stop_kadr1=[]
+    stop_kadr2=[]
     sp = []
-    # embed(i,tetta,count)
-    # generate_video()
+    embed(i,tetta,count)
+    generate_video()
     a = extract(alfa, tetta, i, rand_k)
     print("all")
-
-
-
-    # # diff_pix=[]
-    # # for i in range(1, 3000):
-    # #     qr1 = io.imread(r"C:\Users\user\PycharmProjects\phase_wm\extract/after_normal_phas_bin/result" +
-    # #                     str(i) + ".png")
-    # #     qr2 = io.imread(
-    # #         r"C:\Users\user\PycharmProjects\phase_wm\extract/after_normal_phas_bin/result" + str(i - 1) + ".png")
-    # #
-    # #     diff_pix.append(diff_pix_between_neugb(qr1, qr2))
-    # #
-    # # sort_diff=np.sort(np.array(diff_pix).argsort()[0:50])
-    # # #sort_diff2 = np.sort(np.array(diff_pix))
-    # #
-    # # print(sort_diff)
-    # # # print(sort_diff2[-100:][::-1])
-    # #
-    # # fig, axs = plt.subplots(2,3 )
-    # # axs[0, 0].plot([i for i in range(1,500)],diff_pix[1:500])
-    # # axs[0, 0].set_title('0-500')
-    # # axs[0, 1].plot([i for i in range(500,1000)],diff_pix[500:1000])
-    # # axs[0, 1].set_title('500-1000')
-    # # axs[1, 0].plot([i for i in range(1000,1500)],diff_pix[1000:1500])
-    # # axs[1, 0].set_title('1000-1500')
-    # # axs[1, 1].plot([i for i in range(1500,2000)],diff_pix[1500:2000])
-    # # axs[1, 1].set_title('1500-2000')
-    # # axs[0, 2].plot([i for i in range(2000,2500)],diff_pix[2000:2500])
-    # # axs[0, 2].set_title('2000-2500')
-    # # axs[1, 2].plot([i for i in range(2500, 2999)], diff_pix[2500:2999])
-    # # axs[1, 2].set_title('2500-3000')
-    # #
-    # #
-    # # plt.show()
 
     hand_made= [0,118,404,414,524,1002,1391,1492,1972,2393,2466,2999]
     exit_list=[]
     res = np.zeros((65, 65))
     res_bin = np.zeros((65, 65))
     for i in range(1, len(hand_made)):
-        print(hand_made[i])
+
         tnp = io.imread(r"C:\Users\user\PycharmProjects\phase_wm\extract/wm_after_2_smooth/result" + str(
             hand_made[i]-1 ) + ".png")
         res[tnp >= np.mean(tnp)] += (hand_made[i] - hand_made[i - 1])
@@ -629,8 +618,8 @@ while alfa < 1:
     hm_list.append(compare(r"C:\Users\user\PycharmProjects\phase_wm\extract/after_normal_phas/sumframe_res" + ".png"))
     #print(compare(r"C:\Users\user\PycharmProjects\phase_wm\extract/after_normal_phas_bin/result" + str(i-1) + ".png"))
 
-    print("current percent", stop_kadr1)
-    print("current percent", stop_kadr2)
+    print(tetta,alfa, "current percent", stop_kadr1 )
+    print(tetta,alfa, "current percent", stop_kadr2)
 
     # fig, ax = plt.subplots()
     # ax.plot([i for i in range(0, 3000)], stop_kadr1)
@@ -649,22 +638,22 @@ while alfa < 1:
     #     print(i)
     #     my_exit.append(compare(r"C:\Users\user\PycharmProjects\phase_wm\extract/after_normal_phas_bin/result" + str(i) + ".png"))
 
-    # sort_list=(np.array([my_exit]).argsort())
+    #sort_list=(np.array([my_exit]).argsort())
 
     #tetta+=0.5
-    alfa +=0.02
+    tetta +=0.05
 
-print(np.array(stop_kadr1).argsort()[::-1][0:400])
+
 
 
 #print(np.array(stop_kadr2).argsort()[::-1][0:400])
 
-# fig = plt.figure()
-# ax = fig.add_subplot(111, label="1")
+fig = plt.figure()
+ax = fig.add_subplot(111, label="1")
 # plt.plot([i for i in np.arange(0.91, 1, 0.02)], my_exit)
-# plt.plot([i for i in np.arange(1, 5.1, 1)], stop_kadr1)
-# plt.plot([i for i in np.arange(1, 5.1, 1)], stop_kadr2)
+plt.plot([i for i in np.arange(199, 3000, 200)], stop_kadr1)
+plt.plot([i for i in np.arange(199, 3000, 200)], stop_kadr2)
 # plt.plot([i for i in np.arange(1, 5.1, 1)], stop_kadr3)
 #
 # # plt.plot([i for i in range(1,16,2)],my_exit1)
-# plt.show()
+plt.show()
