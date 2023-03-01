@@ -5,9 +5,9 @@ from reedsolo import RSCodec,rs_encode_msg,init_tables
 # packet= rs_encode_msg('123456789', nk)
 
 
-rsc = RSCodec(nsym=25,nsize=255)  # 10 ecc symbols
+rsc = RSCodec(nsym=28,nsize=31)
 
-mes = 11 * b'Correct extraction'
+mes = 2 * b'Correct extraction of watermark from this video'
 tmp = rsc.encode(mes)
 print(tmp)
 tmp[72] = 5
@@ -23,26 +23,28 @@ print(rsc.check(rmesecc))
 print(len(tmp), tmp)
 print(rmesecc)
 print(rmes)
-bytes1=bytes(rmesecc)
+bytes1= rmesecc
 bin_str=(bin(int(rmesecc.hex(), 16)))
 print(len(bin_str))
 #
 listbin=[bin(byte) for byte in bytes1]
 binaryString = bin_str[2:]
 
-# for el in listbin:
-#     integer = int(el, 2)
-#     character = chr(integer)
-#
-#
-size = 8
-bValues = [binaryString[i:i+size] for i in range(0, len(binaryString), size)]
-string = ""
-for bValue in bValues:
-    integer = int(bValue, 2)
+for el in listbin:
+    integer = int(el, 2)
     character = chr(integer)
-    print(character)
-    string += character
+
+print(len(mes))
+print(rsc.nsym/2/len(mes))
+
+# size = 8
+# bValues = [binaryString[i:i+size] for i in range(0, len(binaryString), size)]
+# string = ""
+# for bValue in bValues:
+#     integer = int(bValue, 2)
+#     character = chr(integer)
+#     print(character)
+#     string += character
 
 
 # import pyreedsolomon
