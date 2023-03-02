@@ -1,8 +1,9 @@
 import numpy as np
 from reedsolo import RSCodec, rs_encode_msg, init_tables
 from PIL import Image
-from qrcode_1 import small2big, big2small
+from helper_methods import small2big, big2small
 from skimage import io
+
 
 def create_RS_cod(mes, rsc):
     tmp = rsc.encode(mes)
@@ -60,7 +61,6 @@ rsc = RSCodec(nsym=28, nsize=31)
 mes = 2 * b'Correct extraction of watermark from this video'
 # create_RS_cod(mes, rsc)
 extr_RS=io.imread(r"C:\Users\user\PycharmProjects\phase_wm\RS_cod89x89.png")
-extr_RS[7:10,111:120]=126
 extract_RS(extr_RS,rsc)
 
 # size = 8
