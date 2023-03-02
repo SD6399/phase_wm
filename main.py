@@ -1,62 +1,18 @@
 import math
 from skimage import io
-from matplotlib import pyplot as plt
-
+from reedsolo import RSCodec
 import ffmpeg
 from skimage.exposure import histogram
-import re
 import csv
 import cv2, os
 import numpy as np
 from PIL import Image, ImageFile
-from qrcode_1 import read_qr, correct_qr
-from qrcode_1 import small2big
+# from qrcode_1 import read_qr, correct_qr
+from helper_methods import small2big, big2small, sort_spis, img2bin
+from reedsolomon import extract_RS
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 size_quadr = 16
-
-
-def sort_spis(sp):
-    spp = []
-    spb = []
-    res = []
-    for i in (sp):
-        spp.append("".join(re.findall(r'\d', i)))
-        spb.append("result")
-    result = [int(item) for item in spp]
-    result.sort()
-
-    result1 = [str(item) for item in result]
-    for k in range(len(sp)):
-        res.append(spb[k] + result1[k] + ".png")
-    return res
-
-
-def img2bin(img):
-    k = 0
-
-    our_avg = np.mean(img)
-    for i in range(0, img.shape[0]):
-        for j in range(0, img.shape[1]):
-            tmp = img[i, j]
-
-            if tmp > our_avg:
-                img[i, j] = 255
-            else:
-                img[i, j] = 0
-
-            k += 1
-    return img
-
-
-def big2small(st_qr):
-    qr = np.zeros((89, 89))
-
-    for i in range(0, 1424, size_quadr):
-        for j in range(0, 1424, size_quadr):
-            qr[int(i / size_quadr), int(j / size_quadr)] = np.mean(st_qr[i:i + size_quadr, j:j + size_quadr])
-
-    return qr
 
 
 def disp(path):
@@ -128,23 +84,10 @@ def read_video(path):
     return count
 
 
-def white_black():
-    qr = io.imread(r'some_qr.png')
-    mass = []
-    for i in range(0, 1040, 16):
-        for j in range(0, 1040, 16):
-            if np.mean(qr[i:i + 16, j:j + 16]) == 255:
-                mass.append(1)
-            else:
-                mass.append(0)
-
-    return (mass.count(1)), (mass.count(0))
-
-
 def embed(my_i, tt, count, var):
     cnt = 0
 
-    PATH_IMG = r'C:\Users\user\PycharmProjects\phase_wm\qr_ver18_H.png'
+    PATH_IMG = r'C:\Users\user\PycharmProjects\phase_wm\RS_cod89x89.png'
     fi = math.pi / 2 / 255
 
     st_qr = cv2.imread(PATH_IMG)
@@ -272,11 +215,6 @@ def extract(alf, tt, rand_fr):
     # count=1000
     shuf_order = read2list(r'C:\Users\user\PycharmProjects\phase_wm\shuf.txt')
     shuf_order = [eval(i) for i in shuf_order]
-    # list001 = []
-    # list002 = []
-    # list_pr=[]
-    # list_pr2=[]
-    # list_phas=[]
     # вычитание усреднённого
     while cnt < count:
 
@@ -440,38 +378,25 @@ def extract(alf, tt, rand_fr):
                 else:
                     cp[i, j] = 0
 
-        cp = correct_qr(cp)
+        # cp = correct_qr(cp)
         imgc = Image.fromarray(cp.astype('uint8'))
 
         imgc.save(
             r"C:\Users\user\PycharmProjects\phase_wm\extract/after_normal_phas_bin/result" + str(cnt) + ".png")
         # print("wm extract", cnt)
         if cnt % 100 == 96:
-            tmp1 = read_qr(
-                small2big(
-                    io.imread(r"C:\Users\user\PycharmProjects\phase_wm\extract/after_normal_phas_bin/result" + str(
-                        cnt) + ".png")))
-            tmp2 = read_qr(qr_for_compare)
-            stop_kadr1_bin.append(tmp1 == tmp2)
+            # tmp1 = read_qr(
+            #     small2big(
+            #         io.imread(r"C:\Users\user\PycharmProjects\phase_wm\extract/after_normal_phas_bin/result" + str(
+            #             cnt) + ".png")))
+            # tmp2 = read_qr(qr_for_compare)
+            # stop_kadr1_bin.append(tmp1 == tmp2)
+            extract_RS(io.imread(r"C:\Users\user\PycharmProjects\phase_wm\extract/after_normal_phas_bin/result" + str(cnt) + ".png"),rsc)
             stop_kadr1.append(compare(
                 r"C:\Users\user\PycharmProjects\phase_wm\extract/after_normal_phas_bin/result" + str(cnt) + ".png"))
             print(cnt, stop_kadr1)
-        # print(list002)
-        # print(cnt)
 
         cnt += 1
-
-    ### повторное сглаживание
-
-    # fig = plt.figure()
-    # ax = fig.add_subplot(111, label="1")
-    # plt.plot([i for i in np.arange(0, count, 1)], list001,label='Phase(0,0)')
-    # # plt.plot([i for i in np.arange(0, count, 1)], list002,label='Moments')
-    # plt.plot([i for i in np.arange(0, count, 1)], list_pr, label='pr1')
-    # plt.plot([i for i in np.arange(0, count, 1)], list_pr2, label='pr2')
-    # plt.plot([i for i in np.arange(0, count, 1)], stop_kadr1, label='classification accuracy')
-    # plt.legend()
-    # plt.show()
 
     count = total_count
 
@@ -505,18 +430,21 @@ def extract(alf, tt, rand_fr):
     while cnt < count:
         c_qr = io.imread(r"C:\Users\user\PycharmProjects\phase_wm\extract\wm_after_2_smooth\result" + str(cnt) + ".png")
         c_qr = img2bin(c_qr)
-        c_qr = correct_qr(c_qr)
+        # c_qr = correct_qr(c_qr)
         img1 = Image.fromarray(c_qr.astype('uint8'))
         img1.save(r"C:\Users\user\PycharmProjects\phase_wm\extract/wm_after_2_smooth_bin/result" + str(cnt) + ".png")
         if cnt % 300 == 0:
             print("2 smooth bin", cnt)
         if cnt % 100 == 96:
-            tmp1 = read_qr(
-                small2big(
-                    io.imread(r"C:\Users\user\PycharmProjects\phase_wm\extract/wm_after_2_smooth_bin/result" + str(
-                        cnt) + ".png")))
-            tmp2 = read_qr(qr_for_compare)
-            stop_kadr2_bin.append(tmp1 == tmp2)
+            #     tmp1 = read_qr(
+            #         small2big(
+            #             io.imread(r"C:\Users\user\PycharmProjects\phase_wm\extract/wm_after_2_smooth_bin/result" + str(
+            #                 cnt) + ".png")))
+            #     tmp2 = read_qr(qr_for_compare)
+            #     stop_kadr2_bin.append(tmp1 == tmp2)
+            extract_RS(io.imread(
+                r"C:\Users\user\PycharmProjects\phase_wm\extract/wm_after_2_smooth_bin/result" + str(cnt) + ".png"),
+                       rsc)
             stop_kadr2.append(
                 compare(
                     r"C:\Users\user\PycharmProjects\phase_wm\extract/wm_after_2_smooth_bin/result" + str(cnt) + ".png"))
@@ -554,7 +482,7 @@ def generate_video(bitr):
 
 
 def compare(path):  # сравнивание извлечённого QR с исходным
-    orig_qr = io.imread(r'C:\Users\user\PycharmProjects\phase_wm\qr_ver18_H.png')
+    orig_qr = io.imread(r'C:\Users\user\PycharmProjects\phase_wm\RS_cod89x89.png')
     orig_qr = np.where(orig_qr > 127, 255, 0)
     small_qr = big2small(orig_qr)
     sr_matr = np.zeros((1424, 1424, 3))
@@ -619,16 +547,15 @@ rand_k = 0
 total_count = 2999
 
 hm_list = []
-
+rsc = RSCodec(nsym=28, nsize=31)
 alfa = 0.01
-tetta = 3
+tetta = 1
 ampl = 3
 sp = []
 
-
-bitr=6.2
-for var in np.arange(1, 10.2, 2):
-    embed(ampl, tetta, total_count,var)
+bitr = 6.2
+for var in np.arange(0, 1.2, 2):
+    embed(ampl, tetta, total_count, var)
     generate_video(bitr)
     stop_kadr1 = []
     stop_kadr2 = []
