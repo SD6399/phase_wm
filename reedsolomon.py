@@ -9,7 +9,7 @@ def create_RS_cod(mes, rsc):
     tmp = rsc.encode(mes)
 
     rmes, rmesecc, errata_pos = rsc.decode(tmp)
-
+    print(rmesecc)
     extract_txt_1 = []
 
     for i in range(len(rmesecc)):
@@ -28,10 +28,13 @@ def create_RS_cod(mes, rsc):
     while len(binstr) < 89 * 89:
         binstr = np.append(binstr, 0)
 
+    print(s)
+    print(len(mes))
+    print(rsc.nsym/len(mes))
     small_matrix = np.resize(binstr, (89, 89))
     matr4embed = small2big(small_matrix)
     matr4embed[matr4embed == 1] = 255
-    print(s)
+    # print(s)
     img = Image.fromarray(matr4embed.astype('uint8'))
     img.convert('RGB').save(r"C:\Users\user\PycharmProjects\phase_wm\RS_cod89x89.png")
 
@@ -41,11 +44,12 @@ def extract_RS(image_RS, rsc):
     final_extract = b""
     # print(len(extract_txt),len(rmesecc))
     # final_extract_b=bytearray(final_extract,'utf-8')
-    matrbin = big2small(image_RS)
+    # matrbin = big2small(image_RS)
+    matrbin = image_RS
     matrbin[matrbin == 255] = 1
     listbin = np.reshape(matrbin, (89*89))
     listbin = listbin.astype(int)
-    for i in range(0,len(listbin)-8,8):
+    for i in range(0,len(listbin)-(89*89-7744),8):
         tmp = ''.join(str(x) for x in listbin[i:i+8])
         ch = bytes([(int(tmp, 2))])
         final_extract += ch
@@ -59,9 +63,9 @@ def extract_RS(image_RS, rsc):
         print("Error of decoder")
 
 
-rsc = RSCodec(nsym=28, nsize=31)
-mes = 2 * b'Correct extraction of watermark from this video'
-# create_RS_cod(mes, rsc)
+rsc = RSCodec(nsym=120, nsize=121)
+mes = 1*b'Correct1'
+create_RS_cod(mes, rsc)
 # extr_RS=io.imread(r"C:\Users\user\PycharmProjects\phase_wm\RS_cod89x89.png")
-# extr_RS[0:512,0:512]=0
+# extr_RS[0:1040,0:512]=0
 # extract_RS(extr_RS,rsc)
