@@ -9,37 +9,10 @@ import numpy as np
 from PIL import Image, ImageFile
 # from qrcode_1 import read_qr, correct_qr
 from helper_methods import small2big, big2small, sort_spis, img2bin
-from reedsolomon import extract_RS
+from reedsolomon import extract_RS, rsc, Nbit
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 size_quadr = 16
-
-
-def disp(path):
-    cnt = 0
-    arr = np.array([])
-
-    list_diff = []
-    while cnt < total_count:
-        tmp = np.copy(arr)
-        arr = io.imread(path + str(cnt) + ".png").astype(float)
-        if cnt == 0:
-            list_diff.append(0)
-
-        else:
-            diff_img = np.abs(arr - tmp)
-
-            list_diff.append(np.mean(diff_img))
-        cnt += 1
-
-    avg = sum(list_diff) / len(list_diff)
-
-    upd_start = []
-    for i in range(len(list_diff)):
-        if abs((list_diff[i])) > (4 * avg):
-            upd_start.append(i)
-
-    return list_diff
 
 
 def disp_pix(path, coord_x, coord_y):
@@ -84,10 +57,10 @@ def read_video(path):
     return count
 
 
-def embed(my_i, tt, count, var):
+def embed(my_i, tt, count):
     cnt = 0
 
-    PATH_IMG = r'C:\Users\user\PycharmProjects\phase_wm\RS_cod89x89.png'
+    PATH_IMG = r"C:\Users\user\PycharmProjects\phase_wm\RS_cod89x89.png"
     fi = math.pi / 2 / 255
 
     st_qr = cv2.imread(PATH_IMG)
@@ -104,8 +77,9 @@ def embed(my_i, tt, count, var):
     shuffled_data = st_qr_1d[shuf_order]  # Shuffle the original data
     # transpose matrix
 
-    res = np.resize(shuffled_data, (1057, 1920))
-    res[-1, 256 - 1920:] = 0
+    pict = np.resize(shuffled_data, (1057, 1920))
+    pict[-1, 256 - 1920:] = 0
+
     # fi = np.random.uniform(low=0, high=np.pi / 2 / 255, size=(res.shape[0], res.shape[1]))
 
     while cnt < count:
@@ -113,7 +87,7 @@ def embed(my_i, tt, count, var):
         # a = imgg
         a = cv2.cvtColor(imgg, cv2.COLOR_RGB2YCrCb)
 
-        temp = np.float32(fi) * np.float32(res)
+        temp = np.float32(fi) * np.float32(pict)
         wm = np.asarray((my_i * np.sin(cnt * tt + temp)))
         if my_i == 1:
             wm[wm > 0] = 1
@@ -121,28 +95,24 @@ def embed(my_i, tt, count, var):
 
         a[0:1057, :, 0] = np.where(np.float32(a[0:1057, :, 0] + wm) > 255, 255,
                                    np.where(a[0:1057, :, 0] + wm < 0, 0, np.float32(a[0:1057, :, 0] + wm)))
-        # a[a>255]=255
-        # a[a<0]=0
         tmp = cv2.cvtColor(a, cv2.COLOR_YCrCb2RGB)
         # tmp=a
 
-        row, col, ch = tmp.shape
-        mean = 0
+        # row, col, ch = tmp.shape
+        # mean = 0
+        # sigma = var ** 0.5
+        # gauss = np.random.normal(mean, sigma, (row, col, ch))
+        # gauss = gauss.reshape(row, col, ch)
+        # gauss[gauss < 0] = 0
+        # noisy = tmp + gauss
 
-        sigma = var ** 0.5
-        gauss = np.random.normal(mean, sigma, (row, col, ch))
-        gauss = gauss.reshape(row, col, ch)
-        gauss[gauss < 0] = 0
-        noisy = tmp + gauss
-
-        img = Image.fromarray(noisy.astype('uint8'))
+        img = Image.fromarray(tmp.astype('uint8'))
 
         img.convert('RGB').save(r"C:\Users\user\PycharmProjects\phase_wm\frames_after_emb\result" + str(cnt) + ".png")
         if cnt % 300 == 0:
             print("wm embed", cnt)
         cnt += 1
-
-    print(shuf_order)
+    # print(shuf_order)
 
 
 def read2list(file):
@@ -159,7 +129,7 @@ def read2list(file):
 
 
 def extract(alf, tt, rand_fr):
-    qr_for_compare = io.imread(r'C:\Users\user\PycharmProjects\phase_wm\qr_ver18_H.png')
+    qr_for_compare = io.imread(r'C:\Users\user\PycharmProjects\phase_wm\RS_cod89x89.png')
     PATH_VIDEO = r'C:\Users\user\PycharmProjects\phase_wm\frames_after_emb\RB_codec.mp4'
     vidcap = cv2.VideoCapture(PATH_VIDEO)
     vidcap.open(PATH_VIDEO)
@@ -212,7 +182,6 @@ def extract(alf, tt, rand_fr):
 
     cnt = int(rand_fr)
     count = total_count
-    # count=1000
     shuf_order = read2list(r'C:\Users\user\PycharmProjects\phase_wm\shuf.txt')
     shuf_order = [eval(i) for i in shuf_order]
     # вычитание усреднённого
@@ -258,9 +227,12 @@ def extract(alf, tt, rand_fr):
 
         yc = np.float32(f) - betta * math.cos(tt) * np.float32(d)
         ys = betta * math.sin(tt) * np.float32(d)
-        c = math.cos(tt * cnt) * np.float32(yc) + math.sin(tt * cnt) * np.float32(ys)
-        s = math.cos(tt * cnt) * np.float32(ys) - math.sin(tt * cnt) * np.float32(yc)
-
+        c = np.cos(tt * cnt) * np.float32(yc) + np.sin(tt * cnt) * np.float32(ys)
+        s = np.cos(tt * cnt) * np.float32(ys) - np.sin(tt * cnt) * np.float32(yc)
+        # print("yc",np.max(yc),np.min(yc))
+        # print("ys",np.max(ys), np.min(ys))
+        # print("c",np.max(c), np.min(c))
+        # print("s",np.max(s), np.min(s))
         fi = np.where(c < 0, np.arctan((s / c)) + np.pi,
                       np.where(s >= 0, np.arctan((s / c)), np.arctan((s / c)) + 2 * np.pi))
         fi = np.where(fi < -np.pi / 4, fi + 2 * np.pi, fi)
@@ -391,7 +363,9 @@ def extract(alf, tt, rand_fr):
             #             cnt) + ".png")))
             # tmp2 = read_qr(qr_for_compare)
             # stop_kadr1_bin.append(tmp1 == tmp2)
-            extract_RS(io.imread(r"C:\Users\user\PycharmProjects\phase_wm\extract/after_normal_phas_bin/result" + str(cnt) + ".png"),rsc)
+            extract_RS(io.imread(
+                r"C:\Users\user\PycharmProjects\phase_wm\extract/after_normal_phas_bin/result" + str(cnt) + ".png"),
+                       rsc, Nbit)
             stop_kadr1.append(compare(
                 r"C:\Users\user\PycharmProjects\phase_wm\extract/after_normal_phas_bin/result" + str(cnt) + ".png"))
             print(cnt, stop_kadr1)
@@ -436,15 +410,15 @@ def extract(alf, tt, rand_fr):
         if cnt % 300 == 0:
             print("2 smooth bin", cnt)
         if cnt % 100 == 96:
-            #     tmp1 = read_qr(
-            #         small2big(
-            #             io.imread(r"C:\Users\user\PycharmProjects\phase_wm\extract/wm_after_2_smooth_bin/result" + str(
-            #                 cnt) + ".png")))
-            #     tmp2 = read_qr(qr_for_compare)
-            #     stop_kadr2_bin.append(tmp1 == tmp2)
+                # tmp1 = read_qr(
+                #     small2big(
+                #         io.imread(r"C:\Users\user\PycharmProjects\phase_wm\extract/wm_after_2_smooth_bin/result" + str(
+                #             cnt) + ".png")))
+                # tmp2 = read_qr(qr_for_compare)
+                # stop_kadr2_bin.append(tmp1 == tmp2)
             extract_RS(io.imread(
                 r"C:\Users\user\PycharmProjects\phase_wm\extract/wm_after_2_smooth_bin/result" + str(cnt) + ".png"),
-                       rsc)
+                rsc, Nbit)
             stop_kadr2.append(
                 compare(
                     r"C:\Users\user\PycharmProjects\phase_wm\extract/wm_after_2_smooth_bin/result" + str(cnt) + ".png"))
@@ -482,7 +456,7 @@ def generate_video(bitr):
 
 
 def compare(path):  # сравнивание извлечённого QR с исходным
-    orig_qr = io.imread(r'C:\Users\user\PycharmProjects\phase_wm\RS_cod89x89.png')
+    orig_qr = io.imread(r"C:\Users\user\PycharmProjects\phase_wm\RS_cod89x89.png")
     orig_qr = np.where(orig_qr > 127, 255, 0)
     small_qr = big2small(orig_qr)
     sr_matr = np.zeros((1424, 1424, 3))
@@ -534,7 +508,7 @@ for_fi = 6
 
 # графики-сравнения по различныи параметрам
 
-PATH_VIDEO = r'Road.mp4'
+PATH_VIDEO = r'cut_RealBarca.mp4'
 
 with open('change_sc.csv', 'r') as f:
     change_sc = list(csv.reader(f))[0]
@@ -544,25 +518,24 @@ change_sc = [eval(i) for i in change_sc]
 # count=read_video(PATH_VIDEO)
 
 rand_k = 0
-total_count = 2999
+total_count = 2997
 
 hm_list = []
-rsc = RSCodec(nsym=28, nsize=31)
 alfa = 0.01
 tetta = 1
-ampl = 3
+
 sp = []
 
 bitr = 6.2
-for var in np.arange(0, 1.2, 2):
-    embed(ampl, tetta, total_count, var)
+for ampl in np.arange(2, 4.4, 1):
+    embed(ampl, tetta, total_count)
     generate_video(bitr)
     stop_kadr1 = []
     stop_kadr2 = []
     stop_kadr1_bin = []
     stop_kadr2_bin = []
 
-    info = ffmpeg.probe(r'C:\Users\user\PycharmProjects\phase_wm\RealBarca.mp4')
+    info = ffmpeg.probe(r'C:\Users\user\PycharmProjects\phase_wm\cut_RealBarca.mp4')
     print(info['streams'][0]['bit_rate'])
     info = ffmpeg.probe(r'C:\Users\user\PycharmProjects\phase_wm\frames_after_emb\RB_codec.mp4')
     print(info['streams'][0]['bit_rate'])
@@ -597,13 +570,13 @@ for var in np.arange(0, 1.2, 2):
     #     hm_list.append(compare(r"C:\Users\user\PycharmProjects\phase_wm\extract/after_normal_phas/sumframe_res" + ".png"))
     #     # print(compare(r"C:\Users\user\PycharmProjects\phase_wm\extract/after_normal_phas_bin/result" + str(i-1) + ".png"))
 
-    print("RANDOM FRAME", rand_k)
+    print(PATH_VIDEO)
     print(ampl, tetta, alfa, "current percent", stop_kadr1)
     print(ampl, tetta, alfa, "current percent", stop_kadr2)
     print(ampl, tetta, alfa, "current percent", stop_kadr1_bin)
     print(ampl, tetta, alfa, "current percent", stop_kadr2_bin)
 
-    # tetta += 0.1
+# tetta += 0.1
 
 # fig = plt.figure()
 # ax = fig.add_subplot(111, label="1")
