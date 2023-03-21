@@ -1,5 +1,9 @@
 import numpy as np
 import re
+from skimage import io
+from pathlib import Path
+import matplotlib.pyplot as plt
+import csv
 
 size_quadr=16
 
@@ -8,7 +12,7 @@ def sort_spis(sp):
     spp = []
     spb = []
     res = []
-    for i in (sp):
+    for i in sp:
         spp.append("".join(re.findall(r'\d', i)))
         spb.append("result")
     result = [int(item) for item in spp]
@@ -73,3 +77,50 @@ def img2bin(img):
 
             k += 1
     return img
+
+
+def disp(path):
+    cnt = 0
+    arr = np.array([])
+
+    total_count = len(list(Path(path).iterdir()))
+
+    list_diff = []
+    while cnt < total_count:
+        tmp = np.copy(arr)
+        arr = io.imread(path + '/frame' + str(cnt) + ".png").astype(float)
+        if cnt == 0:
+            list_diff.append(0)
+
+        else:
+            diff_img = np.abs(arr - tmp)
+
+            list_diff.append(np.mean(diff_img))
+        if cnt % 100==0:
+            print(cnt)
+        cnt += 1
+
+    max_val_list= max(list_diff)
+    list_diff=list_diff/max_val_list/2
+
+    with open('RB_disp.csv', 'w') as f:
+
+        # using csv.writer method from CSV package
+        write = csv.writer(f)
+        write.writerow(list_diff)
+
+    plt.plot(list_diff)
+    plt.show()
+
+    avg = sum(list_diff) / len(list_diff)
+
+    upd_start = []
+    for i in range(len(list_diff)):
+        if abs((list_diff[i])) > (4 * avg):
+            upd_start.append(i)
+
+    return list_diff
+
+
+print(disp("C:/Users/user/PycharmProjects/phase_wm/frames_orig_video"))
+
