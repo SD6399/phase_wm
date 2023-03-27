@@ -9,6 +9,7 @@ import numpy as np
 from PIL import Image, ImageFile
 # from qrcode_1 import read_qr, correct_qr
 from helper_methods import small2big, big2small, sort_spis, img2bin
+from helper_methods import csv2list, bit_voting
 from reedsolomon import extract_RS, rsc, Nbit
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
@@ -47,7 +48,7 @@ def read_video(path):
     while success:
         success, image = vidcap.read()
         if success:
-            cv2.imwrite(r"frames_orig_video\frame%d.png" % count, image)
+            cv2.imwrite(r"C:/Users/user/PycharmProjects/phase_wm\frames_orig_video\frame%d.png" % count, image)
 
         print("записан кадр", count)
 
@@ -60,7 +61,7 @@ def read_video(path):
 def embed(my_i, tt, count):
     cnt = 0
 
-    PATH_IMG = r"C:\Users\user\PycharmProjects\phase_wm\RS_cod89x89.png"
+    PATH_IMG = r"C:/Users/user/PycharmProjects/phase_wm\RS_cod89x89.png"
     fi = math.pi / 2 / 255
 
     st_qr = cv2.imread(PATH_IMG)
@@ -83,7 +84,7 @@ def embed(my_i, tt, count):
     # fi = np.random.uniform(low=0, high=np.pi / 2 / 255, size=(res.shape[0], res.shape[1]))
 
     while cnt < count:
-        imgg = io.imread(r"C:\Users\user\PycharmProjects\phase_wm\frames_orig_video/frame%d.png" % cnt)
+        imgg = io.imread(r"C:/Users/user/PycharmProjects/phase_wm\frames_orig_video/frame%d.png" % cnt)
         # a = imgg
         a = cv2.cvtColor(imgg, cv2.COLOR_RGB2YCrCb)
 
@@ -108,7 +109,7 @@ def embed(my_i, tt, count):
 
         img = Image.fromarray(tmp.astype('uint8'))
 
-        img.convert('RGB').save(r"C:\Users\user\PycharmProjects\phase_wm\frames_after_emb\result" + str(cnt) + ".png")
+        img.convert('RGB').save(r"C:/Users/user/PycharmProjects/phase_wm\frames_after_emb\result" + str(cnt) + ".png")
         if cnt % 300 == 0:
             print("wm embed", cnt)
         cnt += 1
@@ -129,8 +130,8 @@ def read2list(file):
 
 
 def extract(alf, tt, rand_fr):
-    qr_for_compare = io.imread(r'C:\Users\user\PycharmProjects\phase_wm\RS_cod89x89.png')
-    PATH_VIDEO = r'C:\Users\user\PycharmProjects\phase_wm\frames_after_emb\RB_codec.mp4'
+    qr_for_compare = io.imread(r'C:/Users/user/PycharmProjects/phase_wm\RS_cod89x89.png')
+    PATH_VIDEO = r'C:/Users/user/PycharmProjects/phase_wm\frames_after_emb\RB_codec.mp4'
     vidcap = cv2.VideoCapture(PATH_VIDEO)
     vidcap.open(PATH_VIDEO)
 
@@ -143,7 +144,7 @@ def extract(alf, tt, rand_fr):
     while success:
         success, image = vidcap.read()
         if success:
-            cv2.imwrite(r'C:\Users\user\PycharmProjects\phase_wm\extract\frame%d.png' % count, image)
+            cv2.imwrite(r'C:/Users/user/PycharmProjects/phase_wm\extract\frame%d.png' % count, image)
             if count % 300 == 0:
                 print("frame extract", count)
         count += 1
@@ -158,7 +159,7 @@ def extract(alf, tt, rand_fr):
     d1 = d.copy()
 
     while cnt < count:
-        arr = io.imread(r"C:\Users\user\PycharmProjects\phase_wm\extract/frame" + str(cnt) + ".png")
+        arr = io.imread(r"C:/Users/user/PycharmProjects/phase_wm\extract/frame" + str(cnt) + ".png")
         a = arr
         # g1=d1 # !!!!!!!!!!!!!
         d1 = f1
@@ -176,24 +177,26 @@ def extract(alf, tt, rand_fr):
         img = Image.fromarray(f1.astype('uint8'))
         if cnt % 300 == 0:
             print("first smooth", cnt)
-        img.save(r'C:\Users\user\PycharmProjects\phase_wm\extract\first_smooth/result' + str(cnt) + '.png')
+        img.save(r'C:/Users/user/PycharmProjects/phase_wm\extract\first_smooth/result' + str(cnt) + '.png')
 
         cnt += 1
 
+    vot_sp = []
     cnt = int(rand_fr)
     count = total_count
-    shuf_order = read2list(r'C:\Users\user\PycharmProjects\phase_wm\shuf.txt')
+    shuf_order = read2list(r'C:/Users/user/PycharmProjects/phase_wm\shuf.txt')
     shuf_order = [eval(i) for i in shuf_order]
     # вычитание усреднённого
     while cnt < count:
 
-        arr = np.float32(io.imread(r"C:\Users\user\PycharmProjects\phase_wm\extract\frame" + str(cnt) + ".png"))
+        arr = np.float32(io.imread(r"C:/Users/user/PycharmProjects/phase_wm\extract\frame" + str(cnt) + ".png"))
 
         a = cv2.cvtColor(arr, cv2.COLOR_RGB2YCrCb)
         # a = arr
         a1 = np.asarray([])
+        a1 = np.asarray([])
         f1 = np.float32(
-            io.imread(r"C:\Users\user\PycharmProjects\phase_wm\extract\first_smooth\result" + str(cnt) + ".png"))
+            io.imread(r"C:/Users/user/PycharmProjects/phase_wm\extract\first_smooth\result" + str(cnt) + ".png"))
         # f1=np.float32(f1)
         f1 = cv2.cvtColor(f1, cv2.COLOR_RGB2YCrCb)
         a1 = np.where(a < f1, f1 - a, a - f1)
@@ -245,10 +248,10 @@ def extract(alf, tt, rand_fr):
         a1 = wm
         # a1 = cv2.cvtColor(a1, cv2.COLOR_YCrCb2RGB)
         img = Image.fromarray(a1.astype('uint8'))
-        img.save(r'C:\Users\user\PycharmProjects\phase_wm\extract/wm/result' + str(cnt) + '.png')
+        img.save(r'C:/Users/user/PycharmProjects/phase_wm\extract/wm/result' + str(cnt) + '.png')
         # привдение к рабочему диапазону
 
-        l_kadr = io.imread(r'C:\Users\user\PycharmProjects\phase_wm\extract/wm/result' + str(cnt) + '.png')
+        l_kadr = io.imread(r'C:/Users/user/PycharmProjects/phase_wm\extract/wm/result' + str(cnt) + '.png')
 
         fi = np.copy(l_kadr)
         fi_tmp = np.copy(fi)
@@ -332,42 +335,43 @@ def extract(alf, tt, rand_fr):
 
         small_frame = big2small(l_kadr)
         img = Image.fromarray(small_frame.astype('uint8'))
-        img.save(r"C:\Users\user\PycharmProjects\phase_wm\extract/after_normal_phas/result" + str(cnt) + ".png")
+        img.save(r"C:/Users/user/PycharmProjects/phase_wm\extract/after_normal_phas/result" + str(cnt) + ".png")
 
         l_kadr = io.imread(
-            r'C:\Users\user\PycharmProjects\phase_wm\extract/after_normal_phas/result' + str(cnt) + '.png').astype(
+            r'C:/Users/user/PycharmProjects/phase_wm\extract/after_normal_phas/result' + str(cnt) + '.png').astype(
             float)
         cp = l_kadr.copy()
         our_avg = np.mean(cp)
+        cp = np.where(cp > our_avg, 255, 0)
 
-        k = -1
+        # for i in range(0, 89):
+        #     for j in range(0, 89):
+        #         k += 1
+        #         if cp[i, j] > our_avg:
+        #             cp[i, j] = 255
+        #         else:
+        #             cp[i, j] = 0
 
-        for i in range(0, 89):
-            for j in range(0, 89):
-                k += 1
-                if cp[i, j] > our_avg:
-                    cp[i, j] = 255
-                else:
-                    cp[i, j] = 0
-
-        # cp = correct_qr(cp)
+        cp = bit_voting(cp, Nbit)
         imgc = Image.fromarray(cp.astype('uint8'))
 
         imgc.save(
-            r"C:\Users\user\PycharmProjects\phase_wm\extract/after_normal_phas_bin/result" + str(cnt) + ".png")
+            r"C:/Users/user/PycharmProjects/phase_wm\extract/after_normal_phas_bin/result" + str(cnt) + ".png")
         # print("wm extract", cnt)
         if cnt % 100 == 96:
             # tmp1 = read_qr(
             #     small2big(
-            #         io.imread(r"C:\Users\user\PycharmProjects\phase_wm\extract/after_normal_phas_bin/result" + str(
+            #         io.imread(r"C:/Users/user/PycharmProjects/phase_wm\extract/after_normal_phas_bin/result" + str(
             #             cnt) + ".png")))
             # tmp2 = read_qr(qr_for_compare)
             # stop_kadr1_bin.append(tmp1 == tmp2)
+            v = vot_by_variance(r"C:/Users/user/PycharmProjects/phase_wm\extract\after_normal_phas_bin", 0, cnt, 0.045)
+            vot_sp.append(v)
             extract_RS(io.imread(
-                r"C:\Users\user\PycharmProjects\phase_wm\extract/after_normal_phas_bin/result" + str(cnt) + ".png"),
-                       rsc, Nbit)
+                r"C:/Users/user/PycharmProjects/phase_wm\extract/after_normal_phas_bin/result" + str(cnt) + ".png"),
+                rsc, Nbit)
             stop_kadr1.append(compare(
-                r"C:\Users\user\PycharmProjects\phase_wm\extract/after_normal_phas_bin/result" + str(cnt) + ".png"))
+                r"C:/Users/user/PycharmProjects/phase_wm\extract/after_normal_phas_bin/result" + str(cnt) + ".png"))
             print(cnt, stop_kadr1)
 
         cnt += 1
@@ -382,7 +386,7 @@ def extract(alf, tt, rand_fr):
     while cnt < count:
 
         arr = io.imread(
-            r"C:\Users\user\PycharmProjects\phase_wm\extract/after_normal_phas/result" + str(cnt) + ".png")
+            r"C:/Users/user/PycharmProjects/phase_wm\extract/after_normal_phas/result" + str(cnt) + ".png")
         # g2 - y(n-1)
         y_step_1 = f
         if cnt == rand_fr:
@@ -394,7 +398,7 @@ def extract(alf, tt, rand_fr):
             f[f > 255] = 255
 
         img = Image.fromarray(f.astype('uint8'))
-        img.save(r"C:\Users\user\PycharmProjects\phase_wm\extract/wm_after_2_smooth/result" + str(cnt) + ".png")
+        img.save(r"C:/Users/user/PycharmProjects/phase_wm\extract/wm_after_2_smooth/result" + str(cnt) + ".png")
         if cnt % 300 == 0:
             print("wm 2 smooth", cnt)
         cnt += 1
@@ -402,36 +406,38 @@ def extract(alf, tt, rand_fr):
     count = total_count
     cnt = int(rand_fr)
     while cnt < count:
-        c_qr = io.imread(r"C:\Users\user\PycharmProjects\phase_wm\extract\wm_after_2_smooth\result" + str(cnt) + ".png")
+        c_qr = io.imread(r"C:/Users/user/PycharmProjects/phase_wm\extract\wm_after_2_smooth\result" + str(cnt) + ".png")
         c_qr = img2bin(c_qr)
         # c_qr = correct_qr(c_qr)
         img1 = Image.fromarray(c_qr.astype('uint8'))
-        img1.save(r"C:\Users\user\PycharmProjects\phase_wm\extract/wm_after_2_smooth_bin/result" + str(cnt) + ".png")
+        img1.save(r"C:/Users/user/PycharmProjects/phase_wm\extract/wm_after_2_smooth_bin/result" + str(cnt) + ".png")
         if cnt % 300 == 0:
             print("2 smooth bin", cnt)
         if cnt % 100 == 96:
-                # tmp1 = read_qr(
-                #     small2big(
-                #         io.imread(r"C:\Users\user\PycharmProjects\phase_wm\extract/wm_after_2_smooth_bin/result" + str(
-                #             cnt) + ".png")))
-                # tmp2 = read_qr(qr_for_compare)
-                # stop_kadr2_bin.append(tmp1 == tmp2)
+            # tmp1 = read_qr(
+            #     small2big(
+            #         io.imread(r"C:/Users/user/PycharmProjects/phase_wm\extract/wm_after_2_smooth_bin/result" + str(
+            #             cnt) + ".png")))
+            # tmp2 = read_qr(qr_for_compare)
+            # stop_kadr2_bin.append(tmp1 == tmp2)
+            v = vot_by_variance(r"C:/Users/user/PycharmProjects/phase_wm\extract\after_normal_phas_bin", 0, cnt, 0.045)
+            vot_sp.append(v)
             extract_RS(io.imread(
-                r"C:\Users\user\PycharmProjects\phase_wm\extract/wm_after_2_smooth_bin/result" + str(cnt) + ".png"),
+                r"C:/Users/user/PycharmProjects/phase_wm\extract/wm_after_2_smooth_bin/result" + str(cnt) + ".png"),
                 rsc, Nbit)
             stop_kadr2.append(
                 compare(
-                    r"C:\Users\user\PycharmProjects\phase_wm\extract/wm_after_2_smooth_bin/result" + str(cnt) + ".png"))
+                    r"C:/Users/user/PycharmProjects/phase_wm\extract/wm_after_2_smooth_bin/result" + str(cnt) + ".png"))
 
         cnt += 1
 
-    return r"C:\Users\user\PycharmProjects\phase_wm\extract/after_normal_phas_bin/result" + str(2996) + ".png"
+    return r"C:/Users/user/PycharmProjects/phase_wm\extract/after_normal_phas_bin/result" + str(2996) + ".png"
 
 
 def generate_video(bitr):
-    image_folder = r'C:\Users\user\PycharmProjects\phase_wm\frames_after_emb'  # make sure to use your folder
+    image_folder = r'C:/Users/user/PycharmProjects/phase_wm\frames_after_emb'  # make sure to use your folder
     video_name = 'need_video.mp4'
-    os.chdir(r"C:\Users\user\PycharmProjects\phase_wm\frames_after_emb")
+    os.chdir(r"C:/Users/user/PycharmProjects/phase_wm\frames_after_emb")
 
     images = [img for img in os.listdir(image_folder)
               if img.endswith(".png")]
@@ -440,7 +446,7 @@ def generate_video(bitr):
     height, width, layers = frame.shape
     fourcc = cv2.VideoWriter_fourcc(*'H264')
 
-    video = cv2.VideoWriter(video_name, -1, 29.97, (width, height))
+    video = cv2.VideoWriter(video_name, -1, 25, (width, height))
 
     cnt = 0
     for image in sort_name_img:
@@ -456,7 +462,7 @@ def generate_video(bitr):
 
 
 def compare(path):  # сравнивание извлечённого QR с исходным
-    orig_qr = io.imread(r"C:\Users\user\PycharmProjects\phase_wm\RS_cod89x89.png")
+    orig_qr = io.imread(r"C:/Users/user/PycharmProjects/phase_wm\RS_cod89x89.png")
     orig_qr = np.where(orig_qr > 127, 255, 0)
     small_qr = big2small(orig_qr)
     sr_matr = np.zeros((1424, 1424, 3))
@@ -498,6 +504,35 @@ def diff_pix_between_neugb(qr1, qr2):
     return k
 
 
+def vot_by_variance(path_imgs, start, end, treshold):
+    var_list = csv2list(r"C:\Users\user\PycharmProjects\phase_wm/RB_disp.csv")[start:end]
+    sum_matrix = np.zeros((89, 89))
+    np_list = np.array(var_list)
+    need_ind = [i for i in range(len(np_list)) if np_list[i] > treshold]
+    i = start
+    count = 0
+    while i < end:
+        c_qr = io.imread(path_imgs + r"/result" + str(i) + ".png")
+        c_qr[c_qr == 255] = 1
+        if (i - start) not in need_ind:
+            sum_matrix += c_qr
+            count += 1
+        else:
+            i += 1
+        i += 1
+
+    sum_matrix[sum_matrix < count * 0.5] = 0
+    sum_matrix[sum_matrix >= count * 0.5] = 255
+    img1 = Image.fromarray(sum_matrix.astype('uint8'))
+    img1.save(r"C:/Users/user/PycharmProjects/phase_wm\voting" + ".png")
+    comp = (compare(r"C:/Users/user/PycharmProjects/phase_wm\voting" + ".png"))
+    print(count)
+    print(comp)
+    extract_RS(sum_matrix, rsc, Nbit)
+
+    return comp
+
+
 my_exit = []
 my_exit1 = []
 my_exit2 = []
@@ -510,24 +545,31 @@ for_fi = 6
 
 PATH_VIDEO = r'cut_RealBarca.mp4'
 
-with open('change_sc.csv', 'r') as f:
-    change_sc = list(csv.reader(f))[0]
+# with open('change_sc.csv', 'r') as f:
+#     change_sc = list(csv.reader(f))[0]
+#
+# change_sc = [eval(i) for i in change_sc]
 
-change_sc = [eval(i) for i in change_sc]
-
-# count=read_video(PATH_VIDEO)
+count=read_video(PATH_VIDEO)
 
 rand_k = 0
 total_count = 2997
 
 hm_list = []
 alfa = 0.01
-tetta = 1
+tetta = 3
 
-sp = []
+# sp = []
+# vot_sp = []
+# for st in range(96,3000,100):
+#     v = vot_by_variance(r"C:/Users/user/PycharmProjects/phase_wm\extract\after_normal_phas_bin", 0, st, 0.045)
+#     vot_sp.append(v)
+#     print("frame", st)
+# print("Start ",vot_sp)
 
-bitr = 6.2
-for ampl in np.arange(2, 4.4, 1):
+
+bitr = 5.2
+for ampl in [1, 3, 4]:
     embed(ampl, tetta, total_count)
     generate_video(bitr)
     stop_kadr1 = []
@@ -535,11 +577,11 @@ for ampl in np.arange(2, 4.4, 1):
     stop_kadr1_bin = []
     stop_kadr2_bin = []
 
-    info = ffmpeg.probe(r'C:\Users\user\PycharmProjects\phase_wm\cut_RealBarca.mp4')
+    info = ffmpeg.probe(r'C:/Users/user/PycharmProjects/phase_wm\IndiDance.mp4')
     print(info['streams'][0]['bit_rate'])
-    info = ffmpeg.probe(r'C:\Users\user\PycharmProjects\phase_wm\frames_after_emb\RB_codec.mp4')
+    info = ffmpeg.probe(r'C:/Users/user/PycharmProjects/phase_wm\frames_after_emb\RB_codec.mp4')
     print(info['streams'][0]['bit_rate'])
-    info = ffmpeg.probe(r'C:\Users\user\PycharmProjects\phase_wm\frames_after_emb\need_video.mp4')
+    info = ffmpeg.probe(r'C:/Users/user/PycharmProjects/phase_wm\frames_after_emb\need_video.mp4')
     print(info['streams'][0]['bit_rate'])
     print('GEN')
     a = extract(alfa, tetta, rand_k)
@@ -551,24 +593,24 @@ for ampl in np.arange(2, 4.4, 1):
     res_bin = np.zeros((89, 89))
 
     # for ii in range(1, len(hand_made)):
-    #     tnp = io.imread(r"C:\Users\user\PycharmProjects\phase_wm\extract/wm_after_2_smooth/result" + str(
+    #     tnp = io.imread(r"C:/Users/user/PycharmProjects/phase_wm\extract/wm_after_2_smooth/result" + str(
     #         hand_made[ii] - 1) + ".png")
     #     res[tnp >= np.mean(tnp)] += (hand_made[ii] - hand_made[ii - 1])
     #     res[tnp < np.mean(tnp)] -= (hand_made[ii] - hand_made[ii - 1])
     #     # res2=img2bin(tnp)
     #     img = Image.fromarray(res.astype('uint8'))
-    #     img.save(r"C:\Users\user\PycharmProjects\phase_wm\extract/after_normal_phas/sumframe" + str(ii) + ".png")
+    #     img.save(r"C:/Users/user/PycharmProjects/phase_wm\extract/after_normal_phas/sumframe" + str(ii) + ".png")
     #
-    #     # print(compare(r"C:\Users\user\PycharmProjects\phase_wm\extract/after_normal_phas/sumframe" +str(i)+ ".png"), change_sc[i])
+    #     # print(compare(r"C:/Users/user/PycharmProjects/phase_wm\extract/after_normal_phas/sumframe" +str(i)+ ".png"), change_sc[i])
     #     res_bin[res >= 0] = 255
     #     res_bin[res < 0] = 0
     #
     #     img = Image.fromarray(img2bin(res_bin).astype('uint8'))
-    #     img.save(r"C:\Users\user\PycharmProjects\phase_wm\extract/after_normal_phas/sumframe_res" + ".png")
-    #     exit_list.append(compare(r"C:\Users\user\PycharmProjects\phase_wm\extract/after_normal_phas/sumframe_res" + ".png"))
+    #     img.save(r"C:/Users/user/PycharmProjects/phase_wm\extract/after_normal_phas/sumframe_res" + ".png")
+    #     exit_list.append(compare(r"C:/Users/user/PycharmProjects/phase_wm\extract/after_normal_phas/sumframe_res" + ".png"))
     #     print(exit_list)
-    #     hm_list.append(compare(r"C:\Users\user\PycharmProjects\phase_wm\extract/after_normal_phas/sumframe_res" + ".png"))
-    #     # print(compare(r"C:\Users\user\PycharmProjects\phase_wm\extract/after_normal_phas_bin/result" + str(i-1) + ".png"))
+    #     hm_list.append(compare(r"C:/Users/user/PycharmProjects/phase_wm\extract/after_normal_phas/sumframe_res" + ".png"))
+    #     # print(compare(r"C:/Users/user/PycharmProjects/phase_wm\extract/after_normal_phas_bin/result" + str(i-1) + ".png"))
 
     print(PATH_VIDEO)
     print(ampl, tetta, alfa, "current percent", stop_kadr1)
