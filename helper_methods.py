@@ -5,7 +5,9 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import csv
 
-size_quadr=16
+# from reedsolomon import Nbit
+
+size_quadr = 16
 
 
 def sort_spis(sp):
@@ -96,12 +98,12 @@ def disp(path):
             diff_img = np.abs(arr - tmp)
 
             list_diff.append(np.mean(diff_img))
-        if cnt % 100==0:
+        if cnt % 100 == 0:
             print(cnt)
         cnt += 1
 
-    max_val_list= max(list_diff)
-    list_diff=list_diff/max_val_list/2
+    max_val_list = max(list_diff)
+    list_diff = list_diff / max_val_list / 2
 
     with open('RB_disp.csv', 'w') as f:
 
@@ -122,5 +124,39 @@ def disp(path):
     return list_diff
 
 
-print(disp("C:/Users/user/PycharmProjects/phase_wm/frames_orig_video"))
+def csv2list(path_csv):
+    with open(path_csv, newline='') as csvfile:
+        readCSV = csv.reader(csvfile, delimiter=',')
+        l = []
+        for row in readCSV:
+            l.append(row)
+    need_list = l[0]
+    result = [float(item) for item in need_list]
+    return result
 
+
+def bit_voting(image, count):
+    vec_np = np.reshape(image, image.shape[0] * image.shape[1])[0:count]
+    vec_np[vec_np == 255] = 1
+    vec_vot = np.zeros(int(count / 7))
+    for i in range(len(vec_vot)):
+        for j in range(0, 7):
+            vec_vot[i] += vec_np[j * len(vec_vot) + i]
+    vec_vot[vec_vot < (7 / 2)] = 0
+    vec_vot[vec_vot > (7 / 2)] = 255
+
+    long_vec = np.zeros(vec_np.shape)
+    for i in range(0, 7):
+        tmp = i * len(vec_vot)
+        tmp2 = (i + 1) * len(vec_vot)
+        long_vec[tmp:tmp2] = vec_vot
+    for i in range(image.shape[0] * image.shape[1] - count):
+        vec_np = np.append(vec_np, 0)
+    matr_aft_vot = np.reshape(vec_np, (image.shape[0], image.shape[1]))
+    matr_aft_vot[matr_aft_vot == 1] = 255
+    return matr_aft_vot
+
+
+# bit_voting(io.imread(r"D:\dk\university\nirs\extract/wm_after_2_smooth_bin/result" + str(456) + ".png"), 7112)
+# print(disp("C:/Users/user/PycharmProjects/phase_wm/frames_orig_video"))
+csv2list('RB_disp.csv')
