@@ -58,7 +58,7 @@ def read_video(path):
     return count
 
 
-def embed(my_i, tt, count):
+def embed(my_i, tt, count, var):
     cnt = 0
 
     PATH_IMG = r"C:/Users/user/PycharmProjects/phase_wm\RS_cod89x89.png"
@@ -99,15 +99,15 @@ def embed(my_i, tt, count):
         tmp = cv2.cvtColor(a, cv2.COLOR_YCrCb2RGB)
         # tmp=a
 
-        # row, col, ch = tmp.shape
-        # mean = 0
-        # sigma = var ** 0.5
-        # gauss = np.random.normal(mean, sigma, (row, col, ch))
-        # gauss = gauss.reshape(row, col, ch)
-        # gauss[gauss < 0] = 0
-        # noisy = tmp + gauss
+        row, col, ch = tmp.shape
+        mean = 0
+        sigma = var ** 0.5
+        gauss = np.random.normal(mean, sigma, (row, col, ch))
+        gauss = gauss.reshape(row, col, ch)
+        gauss[gauss < 0] = 0
+        noisy = tmp + gauss
 
-        img = Image.fromarray(tmp.astype('uint8'))
+        img = Image.fromarray(noisy.astype('uint8'))
 
         img.convert('RGB').save(r"C:/Users/user/PycharmProjects/phase_wm\frames_after_emb\result" + str(cnt) + ".png")
         if cnt % 300 == 0:
@@ -367,9 +367,13 @@ def extract(alf, tt, rand_fr):
             # stop_kadr1_bin.append(tmp1 == tmp2)
             v = vot_by_variance(r"C:/Users/user/PycharmProjects/phase_wm\extract\after_normal_phas_bin", 0, cnt, 0.045)
             vot_sp.append(v)
-            extract_RS(io.imread(
-                r"C:/Users/user/PycharmProjects/phase_wm\extract/after_normal_phas_bin/result" + str(cnt) + ".png"),
-                rsc, Nbit)
+            if extract_RS(io.imread(
+                    r"C:/Users/user/PycharmProjects/phase_wm\extract/after_normal_phas_bin/result" + str(cnt) + ".png"),
+                    rsc, Nbit) != '':
+                stop_kadr1_bin.append(1)
+            else:
+                stop_kadr1_bin.append(0)
+
             stop_kadr1.append(compare(
                 r"C:/Users/user/PycharmProjects/phase_wm\extract/after_normal_phas_bin/result" + str(cnt) + ".png"))
             print(cnt, stop_kadr1)
@@ -422,12 +426,15 @@ def extract(alf, tt, rand_fr):
             # stop_kadr2_bin.append(tmp1 == tmp2)
             v = vot_by_variance(r"C:/Users/user/PycharmProjects/phase_wm\extract\after_normal_phas_bin", 0, cnt, 0.045)
             vot_sp.append(v)
-            extract_RS(io.imread(
-                r"C:/Users/user/PycharmProjects/phase_wm\extract/wm_after_2_smooth_bin/result" + str(cnt) + ".png"),
-                rsc, Nbit)
-            stop_kadr2.append(
-                compare(
-                    r"C:/Users/user/PycharmProjects/phase_wm\extract/wm_after_2_smooth_bin/result" + str(cnt) + ".png"))
+            if extract_RS(io.imread(
+                    r"C:/Users/user/PycharmProjects/phase_wm\extract/wm_after_2_smooth_bin/result" + str(cnt) + ".png"),
+                    rsc, Nbit) != '':
+                stop_kadr2_bin.append(1)
+            else:
+                stop_kadr2_bin.append(0)
+        stop_kadr2.append(
+            compare(
+                r"C:/Users/user/PycharmProjects/phase_wm\extract/wm_after_2_smooth_bin/result" + str(cnt) + ".png"))
 
         cnt += 1
 
@@ -505,7 +512,7 @@ def diff_pix_between_neugb(qr1, qr2):
 
 
 def vot_by_variance(path_imgs, start, end, treshold):
-    var_list = csv2list(r"C:\Users\user\PycharmProjects\phase_wm/RB_disp.csv")[start:end]
+    var_list = csv2list(r"C:\Users\user\PycharmProjects\phase_wm/LG_disp.csv")[start:end]
     sum_matrix = np.zeros((89, 89))
     np_list = np.array(var_list)
     need_ind = [i for i in range(len(np_list)) if np_list[i] > treshold]
@@ -518,7 +525,7 @@ def vot_by_variance(path_imgs, start, end, treshold):
             sum_matrix += c_qr
             count += 1
         else:
-            i += 1
+            i += 20
         i += 1
 
     sum_matrix[sum_matrix < count * 0.5] = 0
@@ -543,14 +550,14 @@ for_fi = 6
 
 # графики-сравнения по различныи параметрам
 
-PATH_VIDEO = r'cut_RealBarca.mp4'
+PATH_VIDEO = r'IndiDance.mp4'
 
 # with open('change_sc.csv', 'r') as f:
 #     change_sc = list(csv.reader(f))[0]
 #
 # change_sc = [eval(i) for i in change_sc]
 
-count=read_video(PATH_VIDEO)
+# count=read_video(PATH_VIDEO)
 
 rand_k = 0
 total_count = 2997
@@ -559,18 +566,21 @@ hm_list = []
 alfa = 0.01
 tetta = 3
 
-# sp = []
+sp = []
+
+# for tr in np.arange(0,206,20):
 # vot_sp = []
-# for st in range(96,3000,100):
+# for st in range(96, 3000, 100):
 #     v = vot_by_variance(r"C:/Users/user/PycharmProjects/phase_wm\extract\after_normal_phas_bin", 0, st, 0.045)
 #     vot_sp.append(v)
 #     print("frame", st)
-# print("Start ",vot_sp)
-
+#     print("Start ", vot_sp)
 
 bitr = 5.2
-for ampl in [1, 3, 4]:
-    embed(ampl, tetta, total_count)
+ampl = 3
+# embed(ampl, tetta, total_count, 0)
+
+for bitr in [7.5, 5.5, 3.5]:
     generate_video(bitr)
     stop_kadr1 = []
     stop_kadr2 = []
@@ -613,10 +623,10 @@ for ampl in [1, 3, 4]:
     #     # print(compare(r"C:/Users/user/PycharmProjects/phase_wm\extract/after_normal_phas_bin/result" + str(i-1) + ".png"))
 
     print(PATH_VIDEO)
-    print(ampl, tetta, alfa, "current percent", stop_kadr1)
-    print(ampl, tetta, alfa, "current percent", stop_kadr2)
-    print(ampl, tetta, alfa, "current percent", stop_kadr1_bin)
-    print(ampl, tetta, alfa, "current percent", stop_kadr2_bin)
+    print("bitrate", bitr, ampl, tetta, alfa, "current percent", stop_kadr1)
+    print("bitrate", bitr, ampl, tetta, alfa, "current percent", stop_kadr2)
+    print("bitrate", bitr, ampl, tetta, alfa, "current percent", stop_kadr1_bin)
+    print("bitrate", bitr, ampl, tetta, alfa, "current percent", stop_kadr2_bin)
 
 # tetta += 0.1
 
