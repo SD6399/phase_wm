@@ -117,14 +117,14 @@ def ACF_by_periodogram(lst):
     return ifft
 
 
-def calc_ACF(p, alf, betta, numb_frame):
+def calc_ACF(p, betta, alf, x,y):
     # p = 0.001
     # alf = 0.0066
     # betta = 0.072
     # r = math.sqrt(coord_x * coord_x + coord_y * coord_y)
 
     # R = (p * math.e ** (-alf * r) + (1 - p) * math.e ** (-betta * r)) * \
-    R = (p * math.e ** (-alf * numb_frame) + (1 - p) * math.e ** (-betta * numb_frame))
+    R = (p * math.e ** (-alf * math.sqrt(x**2+y**2)) + (1 - p) * math.e ** (-betta *  math.sqrt(x**2+y**2)))
 
     return R
 
@@ -179,12 +179,13 @@ if __name__ == '__main__':
     all_mse = []
     params = []
     count=0
-    for p in np.arange(0.01, 0.1, 0.02):
-        for betta in np.arange(0.0005,0.056, 0.001):
-            for alfa in np.arange(0.3,0.4, 0.005):
+    for p in np.arange(0.01, 0.02, 0.1):
+        for betta in np.arange(0.0115,0.012, 0.01):
+            for alfa in np.arange(0.31,0.42, 0.05):
                 list_ACF = []
-                for i in range(100):
-                    list_ACF.append(calc_ACF(p, alfa, betta, i))
+                for x in range(30):
+                    for y in range(30):
+                        list_ACF.append(calc_ACF(p, betta, alfa, x,y))
 
                 params.append((p,betta,alfa))
                 all_mse.append(mean_squared_error(list(check_row[:30]), list(list_ACF[:30])))
@@ -194,13 +195,13 @@ if __name__ == '__main__':
                 count+=1
 
     print(min(all_mse),all_mse.index(min(all_mse)))
-    print(params[246])
     need_params= params[all_mse.index(min(all_mse))]
     print(need_params)
 
     list_ACF = []
-    for i in range(100):
-        list_ACF.append(calc_ACF(need_params[0], need_params[2], need_params[1], i))
+    for x in range(30):
+        for y in range(30):
+            list_ACF.append(calc_ACF(need_params[0], need_params[1], need_params[2], x,y))
 
     print("LIsts of ACF")
     print(list_ACF)
@@ -216,8 +217,6 @@ if __name__ == '__main__':
     print(mean(div_ACF_video[40:100]))
     # print(sum(div_ACF_video[30:100]) / len(div_ACF_video[30:100]), div_ACF_video)
 
-
-
     plt.title("RealBarca")
     plt.plot(list_ACF[:30], label="Model ACF")
 
@@ -226,12 +225,12 @@ if __name__ == '__main__':
     plt.show()
     # pool = Pool()
 
-    plt.title("B(k+1)/B(k). RealBarca. Volume of pixel=2000")
+    plt.title("B(k+1)/B(k). RealBarca.")
     print("ДИВы")
     print(div_ACF_video)
     print(div_ACF_model)
-    plt.plot(div_ACF_video, label="Average of video")
-    plt.plot(div_ACF_model, label="Model")
+    plt.plot(div_ACF_video[:29], label="Average of video")
+    plt.plot(div_ACF_model[:29], label="Model")
     plt.legend()
     plt.show()
 
