@@ -179,7 +179,7 @@ def reconstruct_signal(acf):
             R[i, j] = acf[N - 1 + abs(i - j)]
 
     # Вычисление вектора автокорреляции
-    r = acf[N:2*N]
+    r = acf[N:2 * N]
 
     # Вычисление коэффициентов регрессии
     a = np.linalg.inv(R) @ r
@@ -187,14 +187,15 @@ def reconstruct_signal(acf):
     # Восстановление сигнала
     reconstructed_signal = np.zeros(N)
     for i in range(N):
-        for j in range(N-i):
-            reconstructed_signal[i] += a[j] * reconstructed_signal[i+j]
+        for j in range(N - i):
+            reconstructed_signal[i] += a[j] * reconstructed_signal[i + j]
 
     return reconstructed_signal
 
 
 if __name__ == '__main__':
 
+    np.random.seed(42)
     rand_list = np.random.choice(1000, 1000, replace=False)
 
     vidcap = cv2.VideoCapture("cut_RealBarca120.mp4")
@@ -205,6 +206,7 @@ if __name__ == '__main__':
 
     pair_lst.extend(ext_list)
     my_square = pair_lst
+    print(pair_lst)
 
     image = io.imread("D:/pythonProject/phase_wm/embedding_BBC/result0.png")
     matr_time = np.zeros((len(pair_lst), 2048))
@@ -216,73 +218,123 @@ if __name__ == '__main__':
     mean_by_mean = np.mean(image[:, :, 0])
     print(len(pair_lst), mean_by_mean)
     # ifft_matr = np.zeros(matr_time.shape)
-    ifft_matr = np.zeros((len(my_square),2048))
+    # ifft_matr = np.zeros((len(my_square), 2048))
     # for i in range(matr_time.shape[0]):
-    success = True
-    while success and count < 2048:
+    # success = True
+    # while success and count < 2048:
+    #
+    #     success, image = vidcap.read()
+    #     for i in range(len(pair_lst)):
+    #         # print(i)
+    #         matr_time[i, count] = image[pair_lst[i][0], pair_lst[i][1], 0]
+    #     count += 1
 
-        success, image = vidcap.read()
-        for i in range(len(pair_lst)):
-            # print(i)
-            matr_time[i, count] = image[pair_lst[i][0], pair_lst[i][1], 0]
-        count += 1
-        # ifft_matr = ACF_by_periodogram2(image[:, :, 0])
+    # mean_matr_time = np.mean(matr_time, axis=0)
+    # mean_by_mean = np.mean(mean_matr_time)
+    # # ifft_matr = np.zeros(matr_time.shape)
+    # for i in range(matr_time.shape[0]):
+    #     # print(len(matr_time[i, :]))
+    #     ifft_matr[i, :] = ACF_by_periodogram(matr_time[i, :])
+    #     # ifft_matr[i, :] = ifft_matr[i, :] - np.mean(matr_time[i, :]) ** 2
+    #     # ifft_matr[i, :] /= np.max(ifft_matr[i, :])
 
-    mean_matr_time = np.mean(matr_time, axis=0)
-    mean_by_mean = np.mean(mean_matr_time)
-    ifft_matr = np.zeros(matr_time.shape)
-    for i in range(matr_time.shape[0]):
-        # print(len(matr_time[i, :]))
-        ifft_matr[i, :] = ACF_by_periodogram(matr_time[i, :])
-        # ifft_matr[i, :] = ifft_matr[i, :] - np.mean(matr_time[i, :]) ** 2
-        # ifft_matr[i, :] /= np.max(ifft_matr[i, :])
+    ifft_matr = ACF_by_periodogram2(image[:1024, :1024, 0])
 
-    mean_ifft = np.mean(ifft_matr, axis=0)
-    mean_ifft -= mean_by_mean ** 2
-    mean_ifft /= np.max(mean_ifft)
-    # check_row = (ifft_matr[0, :1080] )
-    # check_row -= mean_by_mean*mean_by_mean
+    shift_matr = np.fft.fftshift(ifft_matr)
+    spectrum = np.fft.fft2(ifft_matr)
+    imag= np.imag(spectrum)
+
+    display_4 = ifft_matr / np.max(ifft_matr) * 255
+    img1 = Image.fromarray(display_4.astype('uint8'))
+    img1.save(r"D:/pythonProject/phase_wm\ACF_2d_original" + ".png")
+
+    # mean_ifft = np.mean(ifft_matr, axis=0)
+    # mean_ifft -= mean_by_mean ** 2
+    # mean_ifft /= np.max(mean_ifft)
+    check_row = (ifft_matr[0, :])
+    check_row -= np.mean(image) ** 2
+
+    # while len(check_row)<2048:
+    #     check_row.append(0)
+
+    # check_row -= np.mean(image[0,:1080,0])*np.mean(image[0,:1080,0])
     # check_row /= np.max(check_row)
+    # check_row = list(mean_ifft)
 
-    check_row = list(mean_ifft)
     # for i in range(0,1000,300):
     #     plt.plot(ifft_matr[i,:]/np.max(ifft_matr[i,:]),label="string " + str(i))
 
-    # plt.plot(check_row[:30], label="Average ACF")
     # # plt.plot(ifft1000, label="pixel[1000][1000]")
     # # plt.plot(ifft900, label="string 900")
     #
     # plt.xlabel("Number of frame")
     # plt.ylabel("ACF")
 
-    all_mse = []
-    params = []
-    count = 0
-    # for p in np.arange(0.49, 0.5, 0.1):
-    #     for betta in np.arange(0.3,0.321, 0.05):
-    #         for alfa in np.arange(0.01,0.0111, 0.005):
+    # all_mse = []
+    # params = []
+    # for p in np.arange(0.1, 0.98, 0.1):
+    #     for betta in np.arange(0.01,0.21, 0.02):
+    #         for alfa in np.arange(0.001, 0.02,  0.002):
     #             list_ACF = []
-    #             for x in range(100):
+    #             print(p)
+    #             for x in range(500):
     #                 # for y in range(100):
-    #                 list_ACF.append(calc_ACF(p, betta, alfa, x))
+    #                 list_ACF.append(check_row[0]*calc_ACF(p, betta, alfa, x))
     #
     #             params.append((p,betta,alfa))
-    #             all_mse.append(mean_squared_error(list(check_row[:100]), list(list_ACF[:100])))
+    #             all_mse.append(mean_squared_error(list(check_row[:500]), list(list_ACF[:500])))
     #             print(list_ACF[:30])
     #             print(count, ":  ",p,betta,alfa)
     #             print(mean_squared_error(list(check_row[:30]), list(list_ACF[:30])))
     #             count += 1
+    #
+    # print(min(all_mse), all_mse.index(min(all_mse)))
+    # need_params2 = params[all_mse.index(min(all_mse))]
+    # print(need_params2)
+    need_params2 = (0.6, 0.03, 0.003)
+    # need_params = (0.76, 0.1, 0.00005)
 
-    need_params2 = (0.79, 0.26, 0.004)
-    need_params = (0.5, 0.31, 0.009)
+    # list_ACF = []
+    # for x in range(3000):
+    #     list_ACF.append(check_row[0]*calc_ACF(need_params[0], need_params[1], need_params[2], x))
 
-    list_ACF = []
-    for x in range(3000):
-        list_ACF.append(calc_ACF(need_params[0], need_params[1], need_params[2], x))
+    list_ACF2 = np.zeros((128, 128))
+    tmp_matr= np.zeros((64, 64))
+    for x in range(0, 64):
+        for y in range(0, 64):
+            tmp_matr[x][y] = (check_row[0] * calc_ACF2(need_params2[0], need_params2[1], need_params2[2], x, y))
 
-    list_ACF2 = []
-    for x in range(3000):
-        list_ACF2.append(calc_ACF(need_params2[0], need_params2[1], need_params2[2], x))
+    list_ACF2[64:,64:] = tmp_matr[:64,:64]
+    # for x in range(0, 64):
+    #     for y in range(0, 64):
+    for x in range(64):
+        for y in range(64):
+            list_ACF2[64-x,64-y] = tmp_matr[x,y]
+            list_ACF2[64 + x, 64 - y] = tmp_matr[x, y]
+            list_ACF2[64 - x, 64 + y] = tmp_matr[x, y]
+
+    spectrum_my= np.fft.fft2(list_ACF2)
+    imag_my = np.imag(spectrum_my)
+    display_4 = list_ACF2 / np.max(list_ACF2) * 255
+    img1 = Image.fromarray(display_4.astype('uint8'))
+    img1.save(r"D:/pythonProject/phase_wm\ACF_2d" + ".png")
+    # list_ACF2 = np.array(list_ACF2).reshape((1, len(list_ACF2)))
+    #
+    # akf_2d = np.sqrt(np.outer(list_ACF2, list_ACF2))
+
+    # print(mean_squared_error(list(check_row[:100]), list(list_ACF2[:100])))
+    #
+    # list_ACF_exp = []
+    # for x in range(3000):
+    #     list_ACF_exp.append(check_row[0]*calc_ACF(need_params22[0], need_params22[1], need_params22[2], x))
+
+    plt.plot(check_row[:128], label="Average ACF")
+    # plt.plot(list_ACF_exp[:100], label="Exper ACF")
+    plt.plot(list_ACF2[0, :128], label="Model ACF")
+
+    plt.title("Spatial")
+    plt.legend()
+    plt.show()
 
     # for i in range(1, min(len(list_ACF), len(check_row))):
     #     div_ACF_video.append(check_row[i] / check_row[i - 1])
@@ -303,16 +355,15 @@ if __name__ == '__main__':
     # plt.show()
     # pool = Pool()
 
-    tau = np.arange(-2,2, 0.01)
+    tau = np.arange(-2, 2, 0.01)
     akf = 0.5 * np.exp(-0.01 * tau) + 0.5 * np.exp(-0.23 * tau)  # Вычислите АКФ для каждого значения tau
     energy_spectrum = np.abs(np.fft.fft(akf)) ** 2
 
-    print(energy_spectrum.shape)
-    plt.plot(energy_spectrum)
-    plt.show()
+    # plt.show()
     # print(list_ACF[:3000])
     # print(union_list[:3000])
 
+    """
     from mpl_toolkits.mplot3d import Axes3D
 
     # Создание данных для кривых
@@ -326,20 +377,32 @@ if __name__ == '__main__':
 
     Z = np.dot(np.reshape(y2, (100, 1)),np.reshape(y1, (1, 100)))
 
-    var2 = np.sqrt(np.fft.fft2(Z))
-    var1 = np.random.rand(100,100)
-    var1 = np.fft.fft2(var1)
+    # var2_matr = np.zeros((2048,2048))
+    # var2_matr[:ifft_matr.shape[0], :ifft_matr.shape[1]] = ifft_matr
 
-    un_var= np.dot(var1,var2)
-    final_res = np.abs(np.fft.ifft2(un_var))
+    # img1 = Image.fromarray(var2_matr.astype('uint8'))
+    # img1.save(r"D:/pythonProject/phase_wm\ACF_image_2d" + ".png")
+    """
+    for i in range(10):
+        var2 = np.sqrt(np.abs(np.fft.fft2(list_ACF2)))
+        np.random.seed(i)
+        var1 = np.random.rand(128, 128)
+        var1 = np.abs(np.fft.fft2(var1))
+        var1 = np.fft.fftshift(var1)
+        var2 = np.fft.fftshift(var2)
 
-    img1 = Image.fromarray(final_res.astype('uint8'))
-    img1.save(r"D:/pythonProject/phase_wm\simtez_image" + ".png")
+        # exper = np.fft.ifft2(var1)
+        # img1 = Image.fromarray(exper.astype('uint8'))
+        # img1.save(r"D:/pythonProject/phase_wm\exper_noise" + str(i) + ".png")
 
-    print(final_res)
+        un_var = np.dot(var1, var2)
+        final_res = (np.fft.ifft2(un_var))
+
+        img1 = Image.fromarray(final_res.astype('uint8'))
+        img1.save(r"D:/pythonProject/phase_wm\simtez_image" + str(i) + ".png")
 
     # Пример функции для создания поверхности из кривых
-    tensor = np.stack((X, Y,Z))
+    tensor = np.stack((X, Y, Z))
 
     # Создание трехмерной фигуры
     fig = plt.figure()
@@ -355,4 +418,4 @@ if __name__ == '__main__':
     ax.legend()
 
     # Отображение графика
-    plt.show()
+    # plt.show()
