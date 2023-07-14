@@ -238,7 +238,7 @@ if __name__ == '__main__':
     #     # ifft_matr[i, :] = ifft_matr[i, :] - np.mean(matr_time[i, :]) ** 2
     #     # ifft_matr[i, :] /= np.max(ifft_matr[i, :])
 
-    ifft_matr = ACF_by_periodogram2(image[:1024, :1024, 0])
+    ifft_matr = ACF_by_periodogram2(image[:, :, 0])
 
     shift_matr = np.fft.fftshift(ifft_matr)
     spectrum = np.fft.fft2(ifft_matr)
@@ -291,6 +291,7 @@ if __name__ == '__main__':
     # print(min(all_mse), all_mse.index(min(all_mse)))
     # need_params2 = params[all_mse.index(min(all_mse))]
     # print(need_params2)
+    # need_params2 = (0.6, 0.9, 0.05)
     need_params2 = (0.6, 0.03, 0.003)
     # need_params = (0.76, 0.1, 0.00005)
 
@@ -298,23 +299,33 @@ if __name__ == '__main__':
     # for x in range(3000):
     #     list_ACF.append(check_row[0]*calc_ACF(need_params[0], need_params[1], need_params[2], x))
 
-    list_ACF2 = np.zeros((128, 128))
-    tmp_matr= np.zeros((64, 64))
-    for x in range(0, 64):
-        for y in range(0, 64):
+    SIZE = 2048
+    SIZE_HALF = int(SIZE/2)
+
+    list_ACF2 = np.zeros((SIZE, SIZE))
+    tmp_matr= np.zeros((SIZE_HALF, SIZE_HALF))
+    for x in range(0, SIZE_HALF):
+        for y in range(0, SIZE_HALF):
             tmp_matr[x][y] = (check_row[0] * calc_ACF2(need_params2[0], need_params2[1], need_params2[2], x, y))
 
-    list_ACF2[64:,64:] = tmp_matr[:64,:64]
+    list_ACF2[SIZE_HALF:,SIZE_HALF:] = tmp_matr[:SIZE_HALF,:SIZE_HALF]
     # for x in range(0, 64):
     #     for y in range(0, 64):
-    for x in range(64):
-        for y in range(64):
-            list_ACF2[64-x,64-y] = tmp_matr[x,y]
-            list_ACF2[64 + x, 64 - y] = tmp_matr[x, y]
-            list_ACF2[64 - x, 64 + y] = tmp_matr[x, y]
+    for x in range(SIZE_HALF):
+        for y in range(SIZE_HALF):
+            list_ACF2[SIZE_HALF-x,SIZE_HALF-y] = tmp_matr[x,y]
+            list_ACF2[SIZE_HALF + x, SIZE_HALF - y] = tmp_matr[x, y]
+            list_ACF2[SIZE_HALF - x, SIZE_HALF + y] = tmp_matr[x, y]
 
-    spectrum_my= np.fft.fft2(list_ACF2)
+    # for i in range(SIZE):
+    #     list_ACF2[0][i] = list_ACF2[i][0]= 64
+
+    list_ACF2 = np.fft.fftshift(list_ACF2)
+    spectrum_my = np.fft.fft2(list_ACF2)
+
+    real_my = np.real(spectrum_my)
     imag_my = np.imag(spectrum_my)
+    print("my imag",imag_my)
     display_4 = list_ACF2 / np.max(list_ACF2) * 255
     img1 = Image.fromarray(display_4.astype('uint8'))
     img1.save(r"D:/pythonProject/phase_wm\ACF_2d" + ".png")
@@ -328,9 +339,9 @@ if __name__ == '__main__':
     # for x in range(3000):
     #     list_ACF_exp.append(check_row[0]*calc_ACF(need_params22[0], need_params22[1], need_params22[2], x))
 
-    plt.plot(check_row[:128], label="Average ACF")
+    # plt.plot(check_row[:SIZE], label="Average ACF")
     # plt.plot(list_ACF_exp[:100], label="Exper ACF")
-    plt.plot(list_ACF2[0, :128], label="Model ACF")
+    plt.plot(list_ACF2[0, :SIZE], label="Model ACF")
 
     plt.title("Spatial")
     plt.legend()
@@ -384,20 +395,39 @@ if __name__ == '__main__':
     # img1.save(r"D:/pythonProject/phase_wm\ACF_image_2d" + ".png")
     """
     for i in range(10):
-        var2 = np.sqrt(np.abs(np.fft.fft2(list_ACF2)))
+        step1= list_ACF2 / np.max(list_ACF2) * 255
+        img1 = Image.fromarray(step1.astype('uint8'))
+        img1.save(r"D:/pythonProject/phase_wm\step1_" + str(i) + ".png")
+
+        var2 = np.abs(np.fft.fft2(list_ACF2))
+        # var2[0][0]=0
+        step15 = var2 / np.max(var2) * 255
+        img1 = Image.fromarray(step15.astype('uint8'))
+        img1.save(r"D:/pythonProject/phase_wm\step15_" + str(i) + ".png")
+
+        var2 = np.sqrt(var2)
+        step2 = var2 / np.max(var2) * 255
+        img1 = Image.fromarray(step2.astype('uint8'))
+        img1.save(r"D:/pythonProject/phase_wm\step2_" + str(i) + ".png")
+
         np.random.seed(i)
-        var1 = np.random.rand(128, 128)
-        var1 = np.abs(np.fft.fft2(var1))
-        var1 = np.fft.fftshift(var1)
-        var2 = np.fft.fftshift(var2)
+        var1 = np.random.rand(SIZE, SIZE)
+        # print(var1)
+
+        var1 = np.fft.fft2(var1)
+        step3 = var1 / np.max(var1) * 255
+        img1 = Image.fromarray(var1.astype('uint8'))
+        img1.save(r"D:/pythonProject/phase_wm\exper_noise" + str(i) + ".png")
+        # var1 = np.fft.fftshift(var1)
+        # var2 = np.fft.fftshift(var2)
 
         # exper = np.fft.ifft2(var1)
-        # img1 = Image.fromarray(exper.astype('uint8'))
-        # img1.save(r"D:/pythonProject/phase_wm\exper_noise" + str(i) + ".png")
 
-        un_var = np.dot(var1, var2)
-        final_res = (np.fft.ifft2(un_var))
+        un_var = var1*var2
 
+        final_res = np.fft.ifft2(un_var)
+        imag = np.imag(final_res)
+        print(final_res)
         img1 = Image.fromarray(final_res.astype('uint8'))
         img1.save(r"D:/pythonProject/phase_wm\simtez_image" + str(i) + ".png")
 
