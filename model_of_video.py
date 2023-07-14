@@ -374,40 +374,20 @@ if __name__ == '__main__':
     # print(list_ACF[:3000])
     # print(union_list[:3000])
 
-    """
-    from mpl_toolkits.mplot3d import Axes3D
-
-    # Создание данных для кривых
-    x = np.arange(0, 100, 1)  # Значения по оси x
-
-    y1 = list_ACF[:100] # Значения для первой кривой
-    y2 = list_ACF2[:100]  # Значения для второй кривой
-
-    # Создание сетки для построения поверхности
-    X, Y = np.meshgrid(x, x)
-
-    Z = np.dot(np.reshape(y2, (100, 1)),np.reshape(y1, (1, 100)))
-
-    # var2_matr = np.zeros((2048,2048))
-    # var2_matr[:ifft_matr.shape[0], :ifft_matr.shape[1]] = ifft_matr
-
-    # img1 = Image.fromarray(var2_matr.astype('uint8'))
-    # img1.save(r"D:/pythonProject/phase_wm\ACF_image_2d" + ".png")
-    """
     for i in range(10):
         step1= list_ACF2 / np.max(list_ACF2) * 255
         img1 = Image.fromarray(step1.astype('uint8'))
         img1.save(r"D:/pythonProject/phase_wm\step1_" + str(i) + ".png")
 
         var2 = np.abs(np.fft.fft2(list_ACF2))
-        # var2[0][0]=0
+        var2[0][0]=0
         step15 = var2 / np.max(var2) * 255
-        img1 = Image.fromarray(step15.astype('uint8'))
+        img1 = Image.fromarray(step15[0:5,0:5].astype('uint8'))
         img1.save(r"D:/pythonProject/phase_wm\step15_" + str(i) + ".png")
 
         var2 = np.sqrt(var2)
         step2 = var2 / np.max(var2) * 255
-        img1 = Image.fromarray(step2.astype('uint8'))
+        img1 = Image.fromarray(step2[:5,:5].astype('uint8'))
         img1.save(r"D:/pythonProject/phase_wm\step2_" + str(i) + ".png")
 
         np.random.seed(i)
@@ -416,19 +396,30 @@ if __name__ == '__main__':
 
         var1 = np.fft.fft2(var1)
         step3 = var1 / np.max(var1) * 255
-        img1 = Image.fromarray(var1.astype('uint8'))
+        img1 = Image.fromarray(np.real(var1).astype('uint8'))
         img1.save(r"D:/pythonProject/phase_wm\exper_noise" + str(i) + ".png")
+
+        img1 = Image.fromarray(np.imag(var1).astype('uint8'))
+        img1.save(r"D:/pythonProject/phase_wm\exper_noise_imag" + str(i) + ".png")
+
         # var1 = np.fft.fftshift(var1)
         # var2 = np.fft.fftshift(var2)
 
         # exper = np.fft.ifft2(var1)
 
         un_var = var1*var2
+        step5 = un_var / np.max(un_var) * 255
+        step5_real,step5_imag=step5.real,step5.imag
+        step5_abs= np.abs(step5)
+        img1 = Image.fromarray(np.abs(step5).astype('uint8'))
+        img1.save(r"D:/pythonProject/phase_wm\step5_" + str(i) + ".png")
+
 
         final_res = np.fft.ifft2(un_var)
+        new_arr = np.mod(np.real(final_res),256)
         imag = np.imag(final_res)
-        print(final_res)
-        img1 = Image.fromarray(final_res.astype('uint8'))
+        print(np.where(new_arr == np.min(new_arr)), np.where(new_arr == np.max(new_arr)))
+        img1 = Image.fromarray(np.abs(final_res).astype('uint8'))
         img1.save(r"D:/pythonProject/phase_wm\simtez_image" + str(i) + ".png")
 
     # Пример функции для создания поверхности из кривых
