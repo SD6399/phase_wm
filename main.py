@@ -50,20 +50,20 @@ def embed(folder_orig_image, folder_to_save, binary_image, amplitude, tt):
     st_qr = cv2.imread(binary_image)
     st_qr = cv2.cvtColor(st_qr, cv2.COLOR_RGB2YCrCb)
 
-    data_length = st_qr[:, :, 0].size
-    shuf_order = np.arange(data_length)
-
-    np.random.seed(42)
-    np.random.shuffle(shuf_order)
-
-    # Expand the binary image into a string
-    st_qr_1d = st_qr[:, :, 0].ravel()
-    shuffled_data = st_qr_1d[shuf_order]  # Shuffle the original data
-
-    # 1d-string in the image
-    pict = np.resize(shuffled_data, (1057, 1920))
-    # the last elements are uninformative. Therefore, we make zeros
-    pict[-1, 256 - 1920:] = 0
+    # data_length = st_qr[:, :, 0].size
+    # shuf_order = np.arange(data_length)
+    #
+    # np.random.seed(42)
+    # np.random.shuffle(shuf_order)
+    #
+    # # Expand the binary image into a string
+    # st_qr_1d = st_qr[:, :, 0].ravel()
+    # shuffled_data = st_qr_1d[shuf_order]  # Shuffle the original data
+    #
+    # # 1d-string in the image
+    # pict = np.resize(shuffled_data, (1057, 1920))
+    # # the last elements are uninformative. Therefore, we make zeros
+    # pict[-1, 256 - 1920:] = 0
     images = [img for img in os.listdir(folder_orig_image)
               if img.endswith(".png")]
 
@@ -73,12 +73,12 @@ def embed(folder_orig_image, folder_to_save, binary_image, amplitude, tt):
 
     while cnt < len(sort_name_img):
         # Reads in BGR format
-        imgg = cv2.imread(folder_orig_image + sort_name_img[cnt])
+        imgg = io.imread(folder_orig_image + sort_name_img[cnt])
         # translation to the YCrCb space
-        a = cv2.cvtColor(imgg, cv2.COLOR_BGR2YCrCb)
-        a = a.astype(float)
+        # a = imgg
+        a = cv2.cvtColor(imgg, cv2.COLOR_RGB2YCrCb)
 
-        temp = fi * pict
+        temp = np.float32(fi) * np.float32(st_qr)
         # A*sin(m * teta + fi)
         wm = np.array((amplitude * np.sin(cnt * tt + temp)))
 
@@ -86,9 +86,9 @@ def embed(folder_orig_image, folder_to_save, binary_image, amplitude, tt):
         #     wm[wm > 0] = 1
         #     wm[wm < 0] = -1
         # Embedding in the Y-channel
-        a[0:1057, :, 0] = np.clip((a[0:1057, :, 0] + wm), 0, 255)
-
-        a = a.astype(np.uint8)
+        # a[0:1057, :, 0] = np.clip((a[0:1057, :, 0] + wm), 0, 255)
+        a[20:1060, 440:1480, 0] = np.where(np.float32(a[20:1060, 440:1480, 0] + wm[:,:,0]) > 255, 255,
+                                   np.where(a[20:1060, 440:1480, 0] + wm[:,:,0] < 0, 0, np.float32(a[20:1060, 440:1480, 0] + wm[:,:,0])))
         tmp = cv2.cvtColor(a, cv2.COLOR_YCrCb2BGR)
 
         # Converting the YCrCb matrix to BGR
@@ -125,12 +125,11 @@ def extract(alf, tt, rand_fr):
     :param rand_fr: the frame from which the extraction begins
     :return: the path to the final image
     """
-    PATH_VIDEO = r'D:/pythonProject/phase_wm\frames_after_emb\RB_codec.mp4'
+    PATH_VIDEO = r'D:/pythonProject/phase_wm/frames_after_emb/need_video.mp4'
     vidcap = cv2.VideoCapture(PATH_VIDEO)
     vidcap.open(PATH_VIDEO)
 
     betta = 0.999
-    list00 = []
 
     count = int(rand_fr)
 
@@ -139,12 +138,11 @@ def extract(alf, tt, rand_fr):
         success, image = vidcap.read()
         if success:
             cv2.imwrite(r'D:/pythonProject/phase_wm\extract\frame%d.png' % count, image)
-            list00.append((image[0, 0, 0], image[444, 444, 0]))
             if count % 300 == 0:
                 print("frame extract", count)
         count += 1
     # print("pixels after saving", list00)
-    # count = total_count
+    count = total_count
     #
     cnt = int(rand_fr)
     g = np.asarray([])
@@ -153,7 +151,7 @@ def extract(alf, tt, rand_fr):
     # d = g.copy()
     # d1 = d.copy()
     #
-    # while cnt < 120:
+    # while cnt < 3000:
     #     arr = io.imread(r"D:/pythonProject/phase_wm\extract/frame" + str(cnt) + ".png")
     #
     #     # g1=d1 # !!!!!!!!!!!!!
@@ -167,7 +165,7 @@ def extract(alf, tt, rand_fr):
     #
     #     np.clip(f1, 0, 255, out=f1)
     #     img = Image.fromarray(f1.astype('uint8'))
-    #     if cnt % 10 == 0:
+    #     if cnt % 100 == 0:
     #         print("first smooth", cnt)
     #     img.save(r'D:/pythonProject/phase_wm\extract\first_smooth/result' + str(cnt) + '.png')
     #
@@ -177,38 +175,43 @@ def extract(alf, tt, rand_fr):
     g = np.asarray([])
     f = g.copy()
     d = g.copy()
-    count = 120
+    count = 2997
 
     # reading a shuffled object
-    shuf_order = read2list(r'D:/pythonProject/phase_wm\shuf.txt')
-    shuf_order = [eval(i) for i in shuf_order]
+    # shuf_order = read2list(r'D:/pythonProject/phase_wm\shuf.txt')
+    # shuf_order = [eval(i) for i in shuf_order]
     # subtracting the average
     while cnt < count:
 
-        arr = np.float32(cv2.imread(r"D:/pythonProject/phase_wm\extract\frame" + str(cnt) + ".png"))
-        a = cv2.cvtColor(arr, cv2.COLOR_BGR2YCrCb)
+        arr = np.float32(io.imread(r"D:\pythonProject\phase_wm\extract\frame" + str(cnt) + ".png"))
+        a = cv2.cvtColor(arr[20:1060, 440:1480], cv2.COLOR_RGB2YCrCb)
+        # a = a[:, :, 0]
+        # print(np.mean(a[:1057,:,0]),a[:1057,:,0].size)
+        # cv2.imwrite('0a.jpg', a[:,:,0])
+
         # a = arr
         # f1 = np.float32(
         #     cv2.imread(r"D:/pythonProject/phase_wm\extract\first_smooth\result" + str(cnt) + ".png"))
         # # f1=np.float32(f1)
-        # f1 = cv2.cvtColor(f1, cv2.COLOR_RGB2YCrCb)
+        # f1 = cv2.cvtColor(f1[20:1060, 440:1480], cv2.COLOR_RGB2YCrCb)
         # a1 = np.where(a < f1, f1 - a, a - f1)
-        res_1d = np.ravel(a[0:1057, :, 0])[:256 - 1920]
-        start_qr = np.resize(res_1d, (1424, 1424))
-
-        unshuf_order = np.zeros_like(shuf_order)
-        unshuf_order[shuf_order] = np.arange(start_qr.size)
-        unshuffled_data = np.ravel(start_qr)[unshuf_order]
-        matr_unshuf = np.resize(unshuffled_data, (1424, 1424))
-
+        # res_1d = np.ravel(a[0:1057, :, 0])[:256 - 1920]
+        # start_qr = np.resize(res_1d, (1424, 1424))
+        # print(np.mean(start_qr),start_qr.size)
+        # cv2.imwrite('0startqr.jpg', start_qr)
+        # unshuf_order = np.zeros_like(shuf_order)
+        # unshuf_order[shuf_order] = np.arange(start_qr.size)
+        # unshuffled_data = np.ravel(start_qr)[unshuf_order]
+        # matr_unshuf = np.resize(unshuffled_data, (1424, 1424))
+        # cv2.imwrite('0color_img.jpg', matr_unshuf)
         # extraction of watermark
-        a = matr_unshuf
+        a = a[:,:,0]
         g = np.copy(d)
         d = np.copy(f)
 
         if cnt == rand_fr:
             f = np.copy(a)
-            d = np.ones((1424, 1424))
+            d = np.ones((1040, 1040))
 
         else:
             if cnt == rand_fr + 1:
@@ -237,9 +240,9 @@ def extract(alf, tt, rand_fr):
         wm[wm < 0] = 0
 
         a1 = wm
-        # # a1 = cv2.cvtColor(a1, cv2.COLOR_YCrCb2RGB)
-        # img = Image.fromarray(big2small(a1).astype('uint8'))
-        # img.save(r'D:/pythonProject/phase_wm\extract/wm/result' + str(cnt) + '.png')
+        # a1 = cv2.cvtColor(a1, cv2.COLOR_YCrCb2RGB)
+        img = Image.fromarray(big2small(a1).astype('uint8'))
+        img.save(r'D:/pythonProject/phase_wm\extract/wm/result' + str(cnt) + '.png')
         # bringing to the operating range
 
         # l_kadr = io.imread(r'D:/pythonProject/phase_wm\extract/wm/result' + str(cnt) + '.png')
@@ -309,7 +312,7 @@ def extract(alf, tt, rand_fr):
         imgc.save(
             r"D:/pythonProject/phase_wm\extract/after_normal_phas_bin/result" + str(cnt) + ".png")
         # print("wm extract", cnt)
-        if cnt % 5 == 4:
+        if cnt % 25 == 24:
             v = vot_by_variance(r"D:/pythonProject/phase_wm\extract\after_normal_phas_bin", 0, cnt, 0.045)
             vot_sp.append(max(v, 1 - v))
 
@@ -377,7 +380,7 @@ def extract(alf, tt, rand_fr):
     return r"D:/pythonProject/phase_wm\extract/after_normal_phas_bin/result" + str(2996) + ".png"
 
 
-def generate_video(bitr):
+def generate_video():
     """
     Sequence of frames transform to compress video
     :param bitr: bitrate of output video
@@ -406,8 +409,8 @@ def generate_video(bitr):
     cv2.destroyAllWindows()
     video.release()
 
-    os.system( f"ffmpeg -y -i D:/pythonProject/phase_wm/frames_after_emb/need_video.mp4 -b:v {bitr}M -vcodec"
-               f" libx264  D:/pythonProject/phase_wm/frames_after_emb/RB_codec.mp4")
+    # os.system( f"ffmpeg -y -i D:/pythonProject/phase_wm/frames_after_emb/need_video.mp4 -b:v {bitr}M -vcodec"
+    #            f" libx264  D:/pythonProject/phase_wm/frames_after_emb/RB_codec.mp4")
 
 
 def compare(path):
@@ -417,7 +420,7 @@ def compare(path):
     :return: percentage of similarity
     """
 
-    orig_qr = io.imread(r"D:/pythonProject/phase_wm\qr_ver18_H.png")
+    orig_qr = io.imread(r"D:/pythonProject/phase_wm\some_qr.png")
     orig_qr = np.where(orig_qr > 127, 255, 0)
     small_qr = big2small(orig_qr)
     # sr_matr = np.zeros((1424, 1424, 3))
@@ -431,7 +434,7 @@ def compare(path):
 
 def vot_by_variance(path_imgs, start, end, treshold):
     var_list = csv2list(r"D:/pythonProject/\phase_wm/RB_disp.csv")[start:end]
-    sum_matrix = np.zeros((89, 89))
+    sum_matrix = np.zeros((65, 65))
     np_list = np.array(var_list)
     need_ind = [i for i in range(len(np_list)) if np_list[i] > treshold]
     i = start
@@ -462,7 +465,7 @@ if __name__ == '__main__':
 
     ampl = 1
     alfa = 0.01
-    PATH_IMG = r"D:/pythonProject//phase_wm\qr_ver18_H.png"
+    PATH_IMG = r"D:/pythonProject//phase_wm\some_qr.png"
     # count = read_video(r'cut_RealBarca120.mp4')
     for teta in [3]:
         rand_k = 0
@@ -476,6 +479,6 @@ if __name__ == '__main__':
         input_folder = "D:/pythonProject/phase_wm/frames_orig_video/"
         output_folder = "D:/pythonProject/phase_wm/frames_after_emb/"
 
-        # embed(input_folder, output_folder, PATH_IMG, ampl, teta)
-        generate_video(5.5)
+        embed(input_folder, output_folder, PATH_IMG, ampl, teta)
+        generate_video()
         extract(alfa, teta, rand_k)
