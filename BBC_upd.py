@@ -10,7 +10,8 @@ from skimage.exposure import histogram
 # from qrcode_1 import read_qr, correct_qr
 from helper_methods import big2small, sort_spis, img2bin
 from helper_methods import csv2list
-from reedsolomon import extract_RS, rsc, Nbit
+
+# from reedsolomon import extract_RS, rsc, Nbit
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 size_quadr = 16
@@ -150,24 +151,24 @@ def smoothing(path, filename, path_to_save, coef):
 def embed(my_i, count, ):
     cnt = 0
 
-    PATH_IMG = r"D:/pythonProject//phase_wm\qr_ver18_L.png"
+    PATH_IMG = r"D:/pythonProject//phase_wm\some_qr.png"
     fi = math.pi / 2 / 255
 
     st_qr = cv2.imread(PATH_IMG)
     st_qr = cv2.cvtColor(st_qr, cv2.COLOR_RGB2YCrCb)
-
-    data_length = st_qr[:, :, 0].size
-    shuf_order = np.arange(data_length)
-
-    np.random.seed(42)
-    np.random.shuffle(shuf_order)
-
-    st_qr_1d = st_qr[:, :, 0].ravel()
-    shuffled_data = st_qr_1d[shuf_order]  # Shuffle the original data
-    # transpose matrix
-
-    pict = np.resize(shuffled_data, (1057, 1920))
-    pict[-1, 256 - 1920:] = 0
+    #
+    # data_length = st_qr[:, :, 0].size
+    # shuf_order = np.arange(data_length)
+    #
+    # np.random.seed(42)
+    # np.random.shuffle(shuf_order)
+    #
+    # st_qr_1d = st_qr[:, :, 0].ravel()
+    # shuffled_data = st_qr_1d[shuf_order]  # Shuffle the original data
+    # # transpose matrix
+    #
+    # pict = np.resize(shuffled_data, (1057, 1920))
+    # pict[-1, 256 - 1920:] = 0
 
     # fi = np.random.uniform(low=0, high=np.pi / 2 / 255, size=(res.shape[0], res.shape[1]))
 
@@ -199,12 +200,14 @@ def embed(my_i, count, ):
         # a = imgg
         a = cv2.cvtColor(imgg, cv2.COLOR_RGB2YCrCb)
 
-        temp = np.float32(fi) * np.float32(pict)
-        wm = np.asarray(my_i * ((-1) ** cnt) * temp)
+        temp = np.where(st_qr == 255, 1, 0)
+        # wm = np.asarray(my_i * ((-1) ** cnt) * temp)
+        wm_n = np.asarray(my_i * ((-1) ** (cnt + temp)))
 
-        a[0:1057, :, 0] = np.where(np.float32(a[0:1057, :, 0] + wm) > 255, 255,
-                                   np.where(a[0:1057, :, 0] + wm < 0, 0, np.float32(a[0:1057, :, 0] + wm)))
-        tmp = cv2.cvtColor(a, cv2.COLOR_YCrCb2RGB)
+        a[20:1060, 440:1480, 0] = np.where(np.float32(a[20:1060, 440:1480, 0] + wm_n[:, :, 0]) > 255, 255,
+                                           np.where(a[20:1060, 440:1480, 0] + wm_n[:, :, 0] < 0, 0,
+                                                    np.float32(a[20:1060, 440:1480, 0] + wm_n[:, :, 0])))
+        tmp = cv2.cvtColor(a, cv2.COLOR_YCrCb2BGR)
         # tmp=a
 
         img = Image.fromarray(tmp.astype('uint8'))
@@ -235,10 +238,10 @@ def extract(rand_fr, tresh):
     vidcap.open(path_of_video)
     alf = 0.01
     list00 = []
-    beta = 0.999
+    beta = 0.99
 
     # count = 0
-    read_video(path_of_video, r"D:/phase_wm_graps/BBC/extract")
+    # read_video(path_of_video, r"D:/phase_wm_graps/BBC/extract")
     print("pixels after saving", list00)
     f1 = np.zeros((1080, 1920))
     cnt = int(rand_fr)
@@ -271,67 +274,102 @@ def extract(rand_fr, tresh):
 
     d = g.copy()
     vot_sp = []
+
+    sp0 = []
+    sp1 = []
     cnt = int(rand_fr)
     count = total_count
-    shuf_order = read2list(r'D:\pythonProject\\phase_wm\shuf.txt')
-    shuf_order = [eval(i) for i in shuf_order]
+    # shuf_order = read2list(r'D:\pythonProject\\phase_wm\shuf.txt')
+    # shuf_order = [eval(i) for i in shuf_order]
     # вычитание усреднённого
     while cnt < count:
         orig_arr = np.float32(io.imread(r"D:/phase_wm_graps/BBC\extract/frame" + str(cnt) + ".png"))
+        if cnt != 0:
+            orig_arr_1 = np.float32(io.imread(r"D:/phase_wm_graps/BBC/extract/frame" + str(cnt - 1) + ".png"))
+        else:
+            orig_arr_1 = np.zeros(orig_arr.shape)
+
         # arr = np.float32(io.imread(r"D:/phase_wm_graps/BBC\extract/first_smooth/result" + str(cnt) + ".png"))
         # arr = np.float32(io.imread(r"D:/phase_wm_graps/BBC\extract/frame" + str(cnt) + ".png"))
         # a = np.where(orig_arr - arr > 0, orig_arr - arr, arr - orig_arr)
-        a = cv2.cvtColor(orig_arr, cv2.COLOR_RGB2YCrCb)
-
-        res_1d = np.ravel(a[0:1057, :, 0])[:256 - 1920]
-        start_qr = np.resize(res_1d, (1424, 1424))
-
-        unshuf_order = np.zeros_like(shuf_order)
-        unshuf_order[shuf_order] = np.arange(start_qr.size)
-        unshuffled_data = np.ravel(start_qr)[unshuf_order]
-        matr_unshuf = np.resize(unshuffled_data, (1424, 1424))
+        # final_arr = orig_arr*0.5+orig_arr_1*0.5
+        a = cv2.cvtColor(orig_arr[20:1060, 440:1480], cv2.COLOR_RGB2YCrCb)
+        # a = orig_arr
+        if cnt == 0:
+            # a_n1 = cv2.cvtColor(orig_arr_1[20:1060, 440:1480,:],cv2.COLOR_RGB2YCrCb)
+            # a_main_1 = a_n1[:, :, 0]
+            a_main_1 = np.zeros((1040, 1040))
+        else:
+            a_n1 = cv2.cvtColor(orig_arr_1, cv2.COLOR_RGB2YCrCb)
+            a_main_1 = a_n1[20:1060, 440:1480,0]
+            # a_main_1 = orig_arr_1[20:1060, 440:1480]
+        # res_1d = np.ravel(a[0:1057, :, 0])[:256 - 1920]
+        # start_qr = np.resize(res_1d, (1424, 1424))
+        #
+        # unshuf_order = np.zeros_like(shuf_order)
+        # unshuf_order[shuf_order] = np.arange(start_qr.size)
+        # unshuffled_data = np.ravel(start_qr)[unshuf_order]
+        # matr_unshuf = np.resize(unshuffled_data, (1424, 1424))
 
         # извлечение ЦВЗ
 
-        a = matr_unshuf
-
-        g = np.copy(d)
-        d = np.copy(f)
-
+        a_main = a[:,:,0]
+        # a_main = a[20:1060, 440:1480]
+        # g = np.copy(d)
+        tmp = a_main - a_main_1
+        # tmp = a_main*0.5 + a_main_1*0.5
+        # tmp = a_main
         if cnt == rand_fr:
-            f = np.copy(a)
-            d = np.ones((1424, 1424))
+            f = np.copy(tmp)
+            d = np.zeros((1040, 1040))
+            # d = np.copy(a_main-a_main_1)
+        # else:
+        #     if cnt == rand_fr + 1:
+        #         f = - 2 * beta * np.float32(d) + np.float32(a)
 
         else:
-            if cnt == rand_fr + 1:
-                f = - 2 * beta * np.float32(d) + np.float32(a)
+            f = -beta * np.float32(d) + np.float32(tmp)
+            sp0.append(f[120, 0])
+            sp1.append(f[0,0])
+            print(cnt, np.min(f),np.max(f), f[0,0])
+            d = np.copy(f)
 
-            else:
-                f = - 2 * beta * np.float32(d) - (beta ** 2) * np.float32(g) + np.float32(a)
+        # yc = np.float32(f) + beta * np.float32(d)
+        # # ys = 0
+        # c = math.pow(-1, cnt) * np.float32(yc)
+        # s = 0
+        #
+        # fi = np.where(c < 0, np.arctan((s / c)) + np.pi,
+        #               np.where(s >= 0, np.arctan((s / c)), np.arctan((s / c)) + 2 * np.pi))
+        # fi = np.nan_to_num(fi)
+        # fi = np.where(fi < -np.pi / 4, fi + 2 * np.pi, fi)
+        # fi = np.where(fi > 9 * np.pi / 4, fi - 2 * np.pi, fi)
 
-        yc = np.float32(f) + beta * np.float32(d)
-        # ys = 0
-        c = math.pow(-1, cnt) * np.float32(yc)
-        s = 0
+        # wm = np.where(f > 255, 255, np.where(f < 0, 0, wm))
 
-        fi = np.where(c < 0, np.arctan((s / c)) + np.pi,
-                      np.where(s >= 0, np.arctan((s / c)), np.arctan((s / c)) + 2 * np.pi))
-        fi = np.nan_to_num(fi)
-        fi = np.where(fi < -np.pi / 4, fi + 2 * np.pi, fi)
-        fi = np.where(fi > 9 * np.pi / 4, fi - 2 * np.pi, fi)
-        wm = 255 * fi / 2 / math.pi
+        a1 = f
+        small_frame = (big2small(a1))
+        if cnt != 0:
+            wm = np.where(small_frame >= 0, 255, 0)
+        else:
+            wm = np.zeros(small_frame.shape)
 
-        wm = np.where(wm > 255, 255, np.where(wm < 0, 0, wm))
-
-        a1 = wm
+        if cnt % 100 == 99:
+            print("0 spisok ",sp0)
+            print("1 spisok ",sp1)
         # a1 = cv2.cvtColor(a1, cv2.COLOR_YCrCb2RGB)
-        # img = Image.fromarray(a1.astype('uint8'))
-        # img.save(r'D:/phase_wm_graps/BBC\extract/wm/result' + str(cnt) + '.png')
+        img = Image.fromarray(wm.astype('uint8'))
+        img.save(r'D:/phase_wm_graps/BBC\extract/wm/result' + str(cnt) + '.png')
+        """
         # # привдение к рабочему диапазону
         #
-        # l_kadr = io.imread(r'D:/phase_wm_graps/BBC\extract/wm/result' + str(cnt) + '.png')
-
-        # fi = np.copy(l_kadr)
+        l_kadr = io.imread(r'D:/phase_wm_graps/BBC\extract/wm/result' + str(cnt) + '.png')
+        if cnt!=0:
+            l_kadr_n1 = io.imread(r'D:/phase_wm_graps/BBC\extract/wm/result' + str(cnt-1) + '.png')
+            avg_lkadr = l_kadr*0.5+l_kadr_n1*0.5
+            fi = avg_lkadr
+        else:
+            fi = l_kadr
         # fi_tmp = np.copy(fi)
         # fi = (l_kadr * np.pi * 2) / 255
         #
@@ -348,7 +386,7 @@ def extract(rand_fr, tresh):
         # # list_phas.append(coord2[0, 0])
         # hist, bin_centers = histogram(coord1, normalize=False)
         # hist2, bin_centers2 = histogram(coord2, normalize=False)
-
+        a1 = fi
         fi = (a1 * np.pi * 2) / 255
 
         coord1 = np.where(fi < np.pi, (fi / np.pi * 2 - 1) * (-1), ((fi - np.pi) / np.pi * 2 - 1))
@@ -455,7 +493,7 @@ def extract(rand_fr, tresh):
 
         fi_tmp = np.where(fi_tmp < -np.pi / 4, fi_tmp + 2 * np.pi, fi_tmp)
         fi_tmp = np.where(fi_tmp > 9 * np.pi / 4, fi_tmp - 2 * np.pi, fi_tmp)
-
+        
         # list001.append(fi_tmp[0,0])
         fi_tmp = np.where(fi_tmp > np.pi, np.pi, np.where(fi_tmp < 0, 0, fi_tmp))
         l_kadr = fi_tmp * 255 / np.pi
@@ -472,21 +510,22 @@ def extract(rand_fr, tresh):
         cp = np.where(cp > our_avg, 255, 0)
 
         # cp = bit_voting(cp, Nbit)
+        
         imgc = Image.fromarray(cp.astype('uint8'))
 
         imgc.save(
             r"D:/phase_wm_graps/BBC\extract/after_normal_phas_bin/result" + str(cnt) + ".png")
-
+        
         if compare(r"D:/phase_wm_graps/BBC\extract/after_normal_phas_bin/result" + str(cnt) + ".png") < 0.5:
             cp = np.where(cp == 0, 255, 0)
             imgc = Image.fromarray(cp.astype('uint8'))
 
             imgc.save(
                 r"D:/phase_wm_graps/BBC\extract/after_normal_phas_bin/result" + str(cnt) + ".png")
-
+        """
         # print("wm extract", cnt)
         if cnt % 5 == 4:
-            v = vot_by_variance(r"D:/phase_wm_graps/BBC\extract\after_normal_phas_bin", 0, cnt, tresh)
+            v = vot_by_variance(r"D:/phase_wm_graps/BBC\extract/wm", 0, cnt, tresh)
             vot_sp.append(max(v, 1 - v))
             # if extract_RS(io.imread(
             #         r"D:/phase_wm_graps/BBC\extract/after_normal_phas_bin/result" + str(cnt) + ".png"),
@@ -497,8 +536,8 @@ def extract(rand_fr, tresh):
             #     stop_kadr1_bin.append(0)
             #
             stop_kadr1.append(max(compare(
-                r"D:/phase_wm_graps/BBC\extract/after_normal_phas_bin/result" + str(cnt) + ".png"), 1 - compare(
-                r"D:/phase_wm_graps/BBC\extract/after_normal_phas_bin/result" + str(cnt) + ".png")))
+                r"D:/phase_wm_graps/BBC\extract/wm/result" + str(cnt) + ".png"), 1 - compare(
+                r"D:/phase_wm_graps/BBC\extract/wm/result" + str(cnt) + ".png")))
             print(cnt, stop_kadr1)
             print(vot_sp)
 
@@ -591,7 +630,7 @@ def generate_video():
 
 
 def compare(path):  # сравнивание извлечённого QR с исходным
-    orig_qr = io.imread(r"D:\pythonProject\\phase_wm/qr_ver18_L.png")
+    orig_qr = io.imread(r"D:\pythonProject\\phase_wm/some_qr.png")
     orig_qr = np.where(orig_qr > 127, 255, 0)
     small_qr = big2small(orig_qr)
     sr_matr = np.zeros((1424, 1424, 3))
@@ -600,8 +639,8 @@ def compare(path):  # сравнивание извлечённого QR с ис
 
     k = 0
     mas_avg = []
-    for i in range(0, 89):
-        for j in range(0, 89):
+    for i in range(0, 65):
+        for j in range(0, 65):
 
             if np.mean(small_qr[i, j]) == np.mean(myqr[i, j]):
                 sr_matr[i, j] = 1
@@ -635,7 +674,7 @@ def diff_pix_between_neugb(qr1, qr2):
 
 def vot_by_variance(path_imgs, start, end, treshold):
     var_list = csv2list(r"D:\pythonProject\\phase_wm/RB_disp.csv")[start:end]
-    sum_matrix = np.zeros((89, 89))
+    sum_matrix = np.zeros((65, 65))
     np_list = np.array(var_list)
     need_ind = [i for i in range(len(np_list)) if np_list[i] > treshold]
     i = start
@@ -661,7 +700,7 @@ def vot_by_variance(path_imgs, start, end, treshold):
         sum_matrix = np.where(sum_matrix == 255, 0, 255)
     img1 = Image.fromarray(sum_matrix.astype('uint8'))
     img1.save(r"D:/phase_wm_graps/BBC/voting/vot" + str(count) + ".png")
-    extract_RS(sum_matrix, rsc, Nbit)
+    # extract_RS(sum_matrix, rsc, Nbit)
 
     return comp
 
@@ -673,8 +712,6 @@ if __name__ == '__main__':
 
     squ_size = 4
     for_fi = 6
-    # dispr=1
-
     # графики-сравнения по различныи параметрам
 
     # PATH_VIDEO = r'Road.mp4'
@@ -706,26 +743,25 @@ if __name__ == '__main__':
     #     print("Start ", vot_sp)
 
     # bitr = 5.4
-    ampl = 2
+    # ampl = 1
+    for ampl in [1]:
+        # count_of_frames = read_video(PATH_VIDEO[0], "D:/phase_wm_graps/BBC/frames_orig_video")
+        # embed(ampl, total_count)
+        # for vbr in [15,10,5,2.5]:
 
-    # diff("D:/phase_wm_graps/BBC/embedding_BBC","D:/phase_wm_graps/BBC/frames_after_emb")
-    # count_of_frames = read_video(PATH_VIDEO[0], "D:/phase_wm_graps/BBC/frames_orig_video")
-    # embed(ampl, total_count)
-    # for vbr in [15,10,5,2.5]:
+        # generate_video()
 
-    # generate_video()
-
-    stop_kadr1 = []
-    stop_kadr1_bin = []
-    stop_kadr2_bin = []
-    print('GEN')
-    path_extract_code = extract(0, 0.045)
-    print("all")
+        stop_kadr1 = []
+        stop_kadr1_bin = []
+        stop_kadr2_bin = []
+        print('GEN')
+        path_extract_code = extract(0, 0.045)
+        print("all")
 
     hand_made = [0, 118, 404, 414, 524, 1002, 1391, 1492, 1972, 2393, 2466, total_count]
     exit_list = []
-    res = np.zeros((89, 89))
-    res_bin = np.zeros((89, 89))
+    res = np.zeros((65, 65))
+    res_bin = np.zeros((65, 65))
 
     # for ii in range(1, len(hand_made)):
     #     tnp = io.imread(r"D:/phase_wm_graps/BBC\extract/wm_after_2_smooth/result" + str(
