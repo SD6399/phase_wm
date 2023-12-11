@@ -148,7 +148,7 @@ def smoothing(path, filename, path_to_save, coef):
     print(stop_kadr2)
 
 
-def embed(my_i, count, ):
+def embed(my_i, count,var ):
     cnt = 0
 
     PATH_IMG = r"D:/pythonProject//phase_wm\some_qr.png"
@@ -208,12 +208,21 @@ def embed(my_i, count, ):
                                            np.where(a[20:1060, 440:1480, 0] + wm_n[:, :, 0] < 0, 0,
                                                     np.float32(a[20:1060, 440:1480, 0] + wm_n[:, :, 0])))
         tmp = cv2.cvtColor(a, cv2.COLOR_YCrCb2BGR)
+
+        row, col, ch = tmp.shape
+        mean = 0
+        sigma = var ** 0.5
+        gauss = np.random.normal(mean, sigma, (row, col, ch))
+        gauss = gauss.reshape(tmp.shape)
+        # gauss[gauss < 0] = 0
+        noisy = tmp + gauss
+
         # tmp=a
 
-        img = Image.fromarray(tmp.astype('uint8'))
+        img = Image.fromarray(noisy.astype('uint8'))
 
         img.convert('RGB').save(r"D:/phase_wm_graps/BBC\frames_after_emb\result" + str(cnt) + ".png")
-        if cnt % 300 == 0:
+        if cnt % 100 == 0:
             print("wm embed", cnt)
         cnt += 1
     # print(shuf_order)
@@ -241,7 +250,7 @@ def extract(rand_fr, tresh):
     beta = 0.99
 
     # count = 0
-    # read_video(path_of_video, r"D:/phase_wm_graps/BBC/extract")
+    read_video(path_of_video, r"D:/phase_wm_graps/BBC/extract")
     print("pixels after saving", list00)
     f1 = np.zeros((1080, 1920))
     cnt = int(rand_fr)
@@ -282,7 +291,7 @@ def extract(rand_fr, tresh):
     # shuf_order = read2list(r'D:\pythonProject\\phase_wm\shuf.txt')
     # shuf_order = [eval(i) for i in shuf_order]
     # вычитание усреднённого
-    while cnt < count:
+    while cnt < 500:
         orig_arr = np.float32(io.imread(r"D:/phase_wm_graps/BBC\extract/frame" + str(cnt) + ".png"))
         if cnt != 0:
             orig_arr_1 = np.float32(io.imread(r"D:/phase_wm_graps/BBC/extract/frame" + str(cnt - 1) + ".png"))
@@ -354,9 +363,9 @@ def extract(rand_fr, tresh):
         else:
             wm = np.zeros(small_frame.shape)
 
-        if cnt % 100 == 99:
-            print("0 spisok ",sp0)
-            print("1 spisok ",sp1)
+        # if cnt % 100 == 99:
+        #     print("0 spisok ",sp0)
+        #     print("1 spisok ",sp1)
         # a1 = cv2.cvtColor(a1, cv2.COLOR_YCrCb2RGB)
         img = Image.fromarray(wm.astype('uint8'))
         img.save(r'D:/phase_wm_graps/BBC\extract/wm/result' + str(cnt) + '.png')
@@ -538,8 +547,9 @@ def extract(rand_fr, tresh):
             stop_kadr1.append(max(compare(
                 r"D:/phase_wm_graps/BBC\extract/wm/result" + str(cnt) + ".png"), 1 - compare(
                 r"D:/phase_wm_graps/BBC\extract/wm/result" + str(cnt) + ".png")))
-            print(cnt, stop_kadr1)
-            print(vot_sp)
+            if cnt % 50 == 49:
+                print(cnt, stop_kadr1)
+                print(vot_sp)
 
         cnt += 1
 
@@ -743,13 +753,13 @@ if __name__ == '__main__':
     #     print("Start ", vot_sp)
 
     # bitr = 5.4
-    # ampl = 1
-    for ampl in [1]:
+    ampl = 1
+    for noise_lvl in [1,3,5,7]:
         # count_of_frames = read_video(PATH_VIDEO[0], "D:/phase_wm_graps/BBC/frames_orig_video")
-        # embed(ampl, total_count)
+        embed(ampl, total_count,noise_lvl)
         # for vbr in [15,10,5,2.5]:
 
-        # generate_video()
+        generate_video()
 
         stop_kadr1 = []
         stop_kadr1_bin = []
