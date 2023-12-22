@@ -3,23 +3,27 @@ import random
 import numpy as np
 from PIL import Image
 
-def rnd_gauss(mu, sigma):
+
+def rnd_gauss(mu, sigma,seed):
     # Gaussian random number generator
-    u1 = 1.0 - random.random()
-    u2 = 1.0 - random.random()
+    np.random.seed(seed+1)
+    u1 = 1.0 - np.random.random()
+    np.random.seed(seed + 2)
+    u2 = 1.0 - np.random.random()
     z0 = math.sqrt(-2.0 * math.log(u1)) * math.cos(2 * math.pi * u2)
     return mu + z0 * sigma
 
 
 class FieldGenerator:
     @staticmethod
-    def draw_mosaic_field(N, ro, height, width, average, variance):
+    def draw_mosaic_field(N, ro, height, width, average, variance,seed):
         fi = math.pi / N
         rays_number = N
-        lambda_val = -math.log(ro) * math.tan(0.5 * math.pi / N)
+        lambda_val = -math.log(ro) * np.tan(0.5 * math.pi / N)
         diameter = math.sqrt(width * width + height * height)
         K = int(diameter * lambda_val * rays_number) + 1
-        randomizer = random.Random()
+
+
         x0 = width / 2.0
         y0 = height / 2.0
 
@@ -28,14 +32,16 @@ class FieldGenerator:
         fi_current = 0
         color_count = 0
 
-
         # Marking areas when throwing a line
         for i in range(K):
 
-            current_num = randomizer.randint(0, rays_number)
-            rtemp = randomizer.random() * diameter - diameter / 2
+            np.random.seed(seed+i)
+            current_num = np.random.randint(0, rays_number)
+            np.random.seed(seed+i)
+            rtemp = np.random.random() * diameter - diameter / 2
             fi_current = fi * current_num
-            increment = randomizer.randint(0, 255)
+            np.random.seed(seed+i)
+            increment = np.random.randint(0, 255)
             for x in range(width):
                 for y in range(height):
                     x_condition = (x - width / 2.0) * math.cos(fi_current) + (-y + height / 2.0) * math.sin(
@@ -49,7 +55,7 @@ class FieldGenerator:
         colors = np.zeros(color_count + 1, dtype=float)
         sigma = math.sqrt(variance)
         for i in range(color_count + 1):
-            colors[i] = rnd_gauss(average, sigma)
+            colors[i] = rnd_gauss(average, sigma,i)
 
         # Coloring regions by number
         result = np.zeros((height, width), dtype=float)
@@ -57,6 +63,12 @@ class FieldGenerator:
             for y in range(height):
                 result[y, x] = colors[image[y, x]]
 
+        print(result.shape)
+
+        # result=np.where(result<0,result+255,result)
+        # result = np.where(result > 255, result - 255, result)
+        print("min/max",np.min(result),np.max(result))
+        print(np.sum(result<0))
         return result
 
     @staticmethod
@@ -106,7 +118,7 @@ class FieldGenerator:
         colors = np.zeros(color_count + 1, dtype=float)
         sigma = math.sqrt(variance)
         for i in range(color_count + 1):
-            colors[i] = rnd_gauss(average, sigma)
+            colors[i] = rnd_gauss(average, sigma,i)
 
         # Computing correction coefficients for correct mean and variance
         sum_val = 0
@@ -173,13 +185,15 @@ class FieldGenerator:
         colors = np.zeros(color_count + 1, dtype=float)
         sigma = math.sqrt(variance)
         for i in range(color_count + 1):
-            colors[i] = rnd_gauss(average, sigma)
+            colors[i] = rnd_gauss(average, sigma,i)
 
         # Computing correction coefficients for correct mean and variance
         sum_val = 0
         sum_squares = 0
         for x in range(width):
             for y in range(height):
+                if (x%1000==999) and (y%1000==999):
+                    print(x,y)
                 color = colors[image[y, x]]
                 sum_val += color
                 sum_squares += color * color
@@ -221,13 +235,13 @@ class FieldGenerator:
         return result
 
 
-field_image = FieldGenerator.draw_mosaic_field(200, 0.99, 512, 512, 128, 50)
-# field_image2 = FieldGenerator.draw_mosaic_field_non_isotropic(200, 0.999, 15.0, 1.5, 512, 512, 128, 50)
-fis = [0, math.pi / 4, math.pi / 2]
-lambdas = [0.1, 0.2, 0.3]
-# field_image3 = FieldGenerator.draw_mosaic_field_non_isotropic_statistical(fis, lambdas, 512, 512, 128, 50)
-img1 = Image.fromarray(np.abs(field_image).astype('uint8'))
-img1.save(r"D:/pythonProject/phase_wm\mosaic_field" + ".png")
+# field_image = FieldGenerator.draw_mosaic_field(200, 0.99, 2048, 2048, 128, 50)
+# # field_image2 = FieldGenerator.draw_mosaic_field_non_isotropic(200, 0.999, 15.0, 1.5, 512, 512, 128, 50)
+# fis = [0, math.pi / 4, math.pi / 2]
+# lambdas = [0.1, 0.2, 0.3]
+# # field_image3 = FieldGenerator.draw_mosaic_field_non_isotropic_statistical(fis, lambdas, 512, 512, 128, 50)
+# img1 = Image.fromarray(np.abs(field_image).astype('uint8'))
+# img1.save(r"D:/pythonProject/phase_wm\mosaic_field" + ".png")
 
 # img1 = Image.fromarray(np.abs(field_image2).astype('uint8'))
 # img1.save(r"D:/pythonProject/phase_wm\mosaic_non_isotropic_field" + ".png")
