@@ -1,16 +1,12 @@
-import math
-
 import cv2
 import numpy as np
 import os
 from PIL import Image, ImageFile
 from skimage import io
 from skimage.exposure import histogram
-
 # from qrcode_1 import read_qr, correct_qr
-from helper_methods import big2small, sort_spis, img2bin
-from helper_methods import csv2list
-
+from helper_methods import big2small, sort_spis, img2bin,small2big
+from helper_methods import csv2list,decode_wm
 # from reedsolomon import extract_RS, rsc, Nbit
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
@@ -110,7 +106,7 @@ def smoothing(path, filename, path_to_save, coef):
         if sum_over_border > 0:
             print("Sum>255", sum_over_border)
         f[f > 255] = 255
-        print(cnt, np.max(f), np.min(f))
+        # print(cnt, np.max(f), np.min(f))
         img = Image.fromarray(f.astype('uint8'))
         img.save(path_to_save + "/" + filename + str(cnt) + ".png")
         if cnt % 300 == 0:
@@ -152,48 +148,25 @@ def embed(my_i, count,var ):
     cnt = 0
 
     PATH_IMG = r"D:/pythonProject//phase_wm\some_qr.png"
-    fi = math.pi / 2 / 255
 
     st_qr = cv2.imread(PATH_IMG)
-    st_qr = cv2.cvtColor(st_qr, cv2.COLOR_RGB2YCrCb)
-    #
-    # data_length = st_qr[:, :, 0].size
-    # shuf_order = np.arange(data_length)
-    #
-    # np.random.seed(42)
-    # np.random.shuffle(shuf_order)
-    #
-    # st_qr_1d = st_qr[:, :, 0].ravel()
-    # shuffled_data = st_qr_1d[shuf_order]  # Shuffle the original data
-    # # transpose matrix
-    #
-    # pict = np.resize(shuffled_data, (1057, 1920))
-    # pict[-1, 256 - 1920:] = 0
+    st_qr = cv2.cvtColor(st_qr, cv2.COLOR_RGB2YCrCb)[:,:,0]
 
-    # fi = np.random.uniform(low=0, high=np.pi / 2 / 255, size=(res.shape[0], res.shape[1]))
+    # small_qr = big2small(st_qr[:,:,0])
+    # coding_qr = np.zeros(small_qr.shape)
+    #
+    # for i in range(small_qr.shape[0]):
+    #     for j in range(small_qr.shape[1]):
+    #         if j!=0:
+    #             coding_qr[i][j]= small_qr[i][j]==small_qr[i][j-1]
+    #         else:
+    #             coding_qr[i][j] = small_qr[i][j] == 0
+    # coding_qr[:,0] = 1
+    # big_qr = small2big(small_qr)
 
-    # while cnt < count:
-    #     img_path = os.path.join("D:/phase_wm_graps/BBC/frames_orig_video", f"frame{cnt}.png")
-    #     imgg = cv2.imread(img_path)
-    #     a = cv2.cvtColor(imgg, cv2.COLOR_RGB2YCrCb)
-    #
-    #     temp = fi * pict
-    #     wm = my_i * ((-1) ** cnt) * temp
-    #     # print(wm[0,0])
-    #     a[0:1057, :, 0] = np.clip(a[0:1057, :, 0] + wm, 0, 255)
-    #
-    #     tmp = cv2.cvtColor(a, cv2.COLOR_YCrCb2RGB)
-    #     # Преобразование матрицы YCrCb в RGB
-    #
-    #     list00.append((a[0, 0, 0], a[444, 444, 0]))
-    #     img_path = os.path.join("D:/phase_wm_graps/BBC/embedding_BBC", f"result{cnt}.png")
-    #     cv2.imwrite(img_path, tmp)
-    #
-    #     if cnt % 300 == 0:
-    #         print("wm embed", cnt, wm[0, 0])
-    #     cnt += 1
-    #
-    # print("pixels before saving", list00)
+    img = Image.fromarray(st_qr.astype('uint8'))
+
+    img.convert('RGB').save(r"D:/phase_wm_graps/BBC/reformat_qr.png")
 
     while cnt < count:
         imgg = io.imread(r"D:/phase_wm_graps/BBC\frames_orig_video/frame%d.png" % cnt)
@@ -204,9 +177,9 @@ def embed(my_i, count,var ):
         # wm = np.asarray(my_i * ((-1) ** cnt) * temp)
         wm_n = np.asarray(my_i * ((-1) ** (cnt + temp)))
 
-        a[20:1060, 440:1480, 0] = np.where(np.float32(a[20:1060, 440:1480, 0] + wm_n[:, :, 0]) > 255, 255,
-                                           np.where(a[20:1060, 440:1480, 0] + wm_n[:, :, 0] < 0, 0,
-                                                    np.float32(a[20:1060, 440:1480, 0] + wm_n[:, :, 0])))
+        a[20:1060, 440:1480, 0] = np.where(np.float32(a[20:1060, 440:1480, 0] + wm_n) > 255, 255,
+                                           np.where(a[20:1060, 440:1480, 0] + wm_n < 0, 0,
+                                                    np.float32(a[20:1060, 440:1480, 0] + wm_n)))
         tmp = cv2.cvtColor(a, cv2.COLOR_YCrCb2BGR)
 
         row, col, ch = tmp.shape
@@ -340,7 +313,7 @@ def extract(rand_fr, tresh):
             f = -beta * np.float32(d) + np.float32(tmp)
             sp0.append(f[120, 0])
             sp1.append(f[0,0])
-            print(cnt, np.min(f),np.max(f), f[0,0])
+            # print(cnt, np.min(f),np.max(f), f[0,0])
             d = np.copy(f)
 
         # yc = np.float32(f) + beta * np.float32(d)
@@ -359,16 +332,28 @@ def extract(rand_fr, tresh):
         a1 = f
         small_frame = (big2small(a1))
         if cnt != 0:
-            wm = np.where(small_frame >= 0, 255, 0)
+            if cnt % 2 == 1:
+                wm = np.where(small_frame >= 0, 255, 0)
+            else:
+                wm = np.where(small_frame >= 0, 0, 255)
         else:
             wm = np.zeros(small_frame.shape)
+
+        img = Image.fromarray(wm.astype('uint8'))
+        img.save(r'D:/phase_wm_graps/BBC\extract/wm/result' + str(cnt) + '.png')
+
+        # decode_wm(wm,r'D:/phase_wm_graps/BBC\extract/after_normal_phas/result' + str(cnt) + '.png')
+        #
+        # img = Image.fromarray(decoding_qr.astype('uint8'))
+        # img.save(r'D:/phase_wm_graps/BBC\extract/after_normal_phas/result' + str(cnt) + '.png')
+
+
 
         # if cnt % 100 == 99:
         #     print("0 spisok ",sp0)
         #     print("1 spisok ",sp1)
         # a1 = cv2.cvtColor(a1, cv2.COLOR_YCrCb2RGB)
-        img = Image.fromarray(wm.astype('uint8'))
-        img.save(r'D:/phase_wm_graps/BBC\extract/wm/result' + str(cnt) + '.png')
+
         """
         # # привдение к рабочему диапазону
         #
@@ -553,8 +538,8 @@ def extract(rand_fr, tresh):
 
         cnt += 1
 
-    smoothing(r"D:/phase_wm_graps/BBC\extract/after_normal_phas", "result", "D:/phase_wm_graps/BBC/extract"
-                                                                            "/wm_after_2_smooth", 0.13)
+    # smoothing(r"D:/phase_wm_graps/BBC\extract/wm", "result", "D:/phase_wm_graps/BBC/extract"
+    #                                                                         "/wm_after_2_smooth", 0.13)
     """
     count = total_count
 
@@ -691,6 +676,9 @@ def vot_by_variance(path_imgs, start, end, treshold):
     count = 0
     while i < end:
         c_qr = io.imread(path_imgs + r"/result" + str(i) + ".png")
+
+        if len(c_qr.shape) == 3:
+            c_qr=c_qr[:,:,0]
         c_qr[c_qr == 255] = 1
         if (i - start) not in need_ind:
             sum_matrix += c_qr
@@ -704,8 +692,8 @@ def vot_by_variance(path_imgs, start, end, treshold):
     img1 = Image.fromarray(sum_matrix.astype('uint8'))
     img1.save(r"D:/phase_wm_graps/BBC/voting/vot" + str(count) + ".png")
     comp = compare(r"D:/phase_wm_graps/BBC/voting/vot" + str(count) + ".png")
-    print(count)
-    print(comp)
+    # print(count)
+    # print(comp)
     if comp < 0.5:
         sum_matrix = np.where(sum_matrix == 255, 0, 255)
     img1 = Image.fromarray(sum_matrix.astype('uint8'))
@@ -724,8 +712,8 @@ if __name__ == '__main__':
     for_fi = 6
     # графики-сравнения по различныи параметрам
 
-    # PATH_VIDEO = r'Road.mp4'
-    PATH_VIDEO = [r'D:/pythonProject/phase_wm/RealBarca.mp4']
+    # PATH_VIDEO = r'Road.mp4'       r'D:/pythonProject/phase_wm/RealBarca.mp4',
+    PATH_VIDEO = ["D:/pythonProject/phase_wm/BBC_method_sintez/40change_ro=0.959_500.mp4"]
 
     # with open('change_sc.csv', 'r') as f:
     #     change_sc = list(csv.reader(f))[0]
@@ -733,7 +721,7 @@ if __name__ == '__main__':
     # change_sc = [eval(i) for i in change_sc]
 
     rand_k = 0
-    total_count = 2997
+    total_count = 467
 
     hm_list = []
 
@@ -754,8 +742,8 @@ if __name__ == '__main__':
 
     # bitr = 5.4
     ampl = 1
-    for noise_lvl in [1,3,5,7]:
-        # count_of_frames = read_video(PATH_VIDEO[0], "D:/phase_wm_graps/BBC/frames_orig_video")
+    for noise_lvl in [0]:
+        count_of_frames = read_video(PATH_VIDEO[0], "D:/phase_wm_graps/BBC/frames_orig_video")
         embed(ampl, total_count,noise_lvl)
         # for vbr in [15,10,5,2.5]:
 
@@ -795,7 +783,7 @@ if __name__ == '__main__':
     #     # print(compare(r"D:/phase_wm_graps/BBC\extract/after_normal_phas_bin/result" + str(i-1) + ".png"))
 
     print(PATH_VIDEO)
-    print("ampl", ampl, alfa, "current percent", stop_kadr1)
+    print("ampl", noise_lvl, alfa, "current percent", stop_kadr1)
     # print("bitrate", bitr, ampl, teta, alfa, "current percent", stop_kadr1_bin)
     # print("bitrate", bitr, ampl, teta, alfa, "current percent", stop_kadr2_bin)
 
