@@ -5,8 +5,9 @@ from PIL import Image, ImageFile
 from skimage import io
 from skimage.exposure import histogram
 # from qrcode_1 import read_qr, correct_qr
-from helper_methods import big2small, sort_spis, img2bin,small2big
-from helper_methods import csv2list,decode_wm
+from helper_methods import big2small, sort_spis, img2bin, small2big
+from helper_methods import csv2list, decode_wm
+
 # from reedsolomon import extract_RS, rsc, Nbit
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
@@ -144,13 +145,13 @@ def smoothing(path, filename, path_to_save, coef):
     print(stop_kadr2)
 
 
-def embed(my_i, count,var ):
+def embed(my_i, count, var):
     cnt = 0
 
     PATH_IMG = r"D:/pythonProject//phase_wm\some_qr.png"
 
     st_qr = cv2.imread(PATH_IMG)
-    st_qr = cv2.cvtColor(st_qr, cv2.COLOR_RGB2YCrCb)[:,:,0]
+    st_qr = cv2.cvtColor(st_qr, cv2.COLOR_RGB2YCrCb)[:, :, 0]
 
     # small_qr = big2small(st_qr[:,:,0])
     # coding_qr = np.zeros(small_qr.shape)
@@ -228,7 +229,7 @@ def extract(rand_fr, tresh):
     f1 = np.zeros((1080, 1920))
     cnt = int(rand_fr)
     #
-    # while cnt < total_count:
+    # while cnt < 496:
     #     arr = io.imread(r"D:/phase_wm_graps/BBC/extract/frame" + str(cnt) + ".png")
     #     a = arr
     #     # g1=d1 # !!!!!!!!!!!!!
@@ -239,9 +240,9 @@ def extract(rand_fr, tresh):
     #     # elif cnt == change_sc[scene-1] + 1:
     #     else:
     #         f1 = np.float32(d1) * alf + np.float32(a) * (1 - alf)
-    #     # else:
-    #     #     f1 = (1-alf)*(1-alf)*a+(1-alf)*alf*d1+alf*g1
-    #
+    # #     # else:
+    # #     #     f1 = (1-alf)*(1-alf)*a+(1-alf)*alf*d1+alf*g1
+    # #
     #     f1[f1 > 255] = 255
     #     f1[f1 < 0] = 0
     #     img = Image.fromarray(f1.astype('uint8'))
@@ -264,9 +265,9 @@ def extract(rand_fr, tresh):
     # shuf_order = read2list(r'D:\pythonProject\\phase_wm\shuf.txt')
     # shuf_order = [eval(i) for i in shuf_order]
     # вычитание усреднённого
-    while cnt < 500:
+    while cnt < count:
         orig_arr = np.float32(io.imread(r"D:/phase_wm_graps/BBC\extract/frame" + str(cnt) + ".png"))
-        if cnt != 0:
+        if cnt != rand_fr:
             orig_arr_1 = np.float32(io.imread(r"D:/phase_wm_graps/BBC/extract/frame" + str(cnt - 1) + ".png"))
         else:
             orig_arr_1 = np.zeros(orig_arr.shape)
@@ -277,13 +278,13 @@ def extract(rand_fr, tresh):
         # final_arr = orig_arr*0.5+orig_arr_1*0.5
         a = cv2.cvtColor(orig_arr[20:1060, 440:1480], cv2.COLOR_RGB2YCrCb)
         # a = orig_arr
-        if cnt == 0:
+        if cnt == rand_fr:
             # a_n1 = cv2.cvtColor(orig_arr_1[20:1060, 440:1480,:],cv2.COLOR_RGB2YCrCb)
             # a_main_1 = a_n1[:, :, 0]
             a_main_1 = np.zeros((1040, 1040))
         else:
             a_n1 = cv2.cvtColor(orig_arr_1, cv2.COLOR_RGB2YCrCb)
-            a_main_1 = a_n1[20:1060, 440:1480,0]
+            a_main_1 = a_n1[20:1060, 440:1480, 0]
             # a_main_1 = orig_arr_1[20:1060, 440:1480]
         # res_1d = np.ravel(a[0:1057, :, 0])[:256 - 1920]
         # start_qr = np.resize(res_1d, (1424, 1424))
@@ -295,10 +296,11 @@ def extract(rand_fr, tresh):
 
         # извлечение ЦВЗ
 
-        a_main = a[:,:,0]
+        a_main = a[:, :, 0]
         # a_main = a[20:1060, 440:1480]
         # g = np.copy(d)
-        tmp = a_main - a_main_1
+        tmp = np.clip(a_main - a_main_1, -2, 2)
+        # tmp = a_main - a_main_1
         # tmp = a_main*0.5 + a_main_1*0.5
         # tmp = a_main
         if cnt == rand_fr:
@@ -312,7 +314,7 @@ def extract(rand_fr, tresh):
         else:
             f = -beta * np.float32(d) + np.float32(tmp)
             sp0.append(f[120, 0])
-            sp1.append(f[0,0])
+            sp1.append(f[0, 0])
             # print(cnt, np.min(f),np.max(f), f[0,0])
             d = np.copy(f)
 
@@ -331,7 +333,7 @@ def extract(rand_fr, tresh):
 
         a1 = f
         small_frame = (big2small(a1))
-        if cnt != 0:
+        if cnt != rand_fr:
             if cnt % 2 == 1:
                 wm = np.where(small_frame >= 0, 255, 0)
             else:
@@ -346,8 +348,6 @@ def extract(rand_fr, tresh):
         #
         # img = Image.fromarray(decoding_qr.astype('uint8'))
         # img.save(r'D:/phase_wm_graps/BBC\extract/after_normal_phas/result' + str(cnt) + '.png')
-
-
 
         # if cnt % 100 == 99:
         #     print("0 spisok ",sp0)
@@ -518,7 +518,7 @@ def extract(rand_fr, tresh):
                 r"D:/phase_wm_graps/BBC\extract/after_normal_phas_bin/result" + str(cnt) + ".png")
         """
         # print("wm extract", cnt)
-        if cnt % 5 == 4:
+        if cnt % 25 == 24:
             v = vot_by_variance(r"D:/phase_wm_graps/BBC\extract/wm", 0, cnt, tresh)
             vot_sp.append(max(v, 1 - v))
             # if extract_RS(io.imread(
@@ -532,7 +532,7 @@ def extract(rand_fr, tresh):
             stop_kadr1.append(max(compare(
                 r"D:/phase_wm_graps/BBC\extract/wm/result" + str(cnt) + ".png"), 1 - compare(
                 r"D:/phase_wm_graps/BBC\extract/wm/result" + str(cnt) + ".png")))
-            if cnt % 50 == 49:
+            if cnt % 25 == 24:
                 print(cnt, stop_kadr1)
                 print(vot_sp)
 
@@ -612,10 +612,11 @@ def generate_video():
 
     cnt = 0
     for image in sort_name_img:
-        if cnt % 300 == 0:
+        if cnt % 100 == 0:
             print(cnt)
         video.write(cv2.imread(os.path.join(image_folder, image)))
         cnt += 1
+
     cv2.destroyAllWindows()
     video.release()
 
@@ -669,6 +670,8 @@ def diff_pix_between_neugb(qr1, qr2):
 
 def vot_by_variance(path_imgs, start, end, treshold):
     var_list = csv2list(r"D:\pythonProject\\phase_wm/RB_disp.csv")[start:end]
+    # var_list = [0, 36, 77, 82, 120, 136, 184, 243, 278, 285, 290, 291, 308, 345, 348, 365, 375, 394, 403, 467]
+
     sum_matrix = np.zeros((65, 65))
     np_list = np.array(var_list)
     need_ind = [i for i in range(len(np_list)) if np_list[i] > treshold]
@@ -678,7 +681,7 @@ def vot_by_variance(path_imgs, start, end, treshold):
         c_qr = io.imread(path_imgs + r"/result" + str(i) + ".png")
 
         if len(c_qr.shape) == 3:
-            c_qr=c_qr[:,:,0]
+            c_qr = c_qr[:, :, 0]
         c_qr[c_qr == 255] = 1
         if (i - start) not in need_ind:
             sum_matrix += c_qr
@@ -710,10 +713,11 @@ if __name__ == '__main__':
 
     squ_size = 4
     for_fi = 6
+    br = 3.5
     # графики-сравнения по различныи параметрам
 
-    # PATH_VIDEO = r'Road.mp4'       r'D:/pythonProject/phase_wm/RealBarca.mp4',
-    PATH_VIDEO = ["D:/pythonProject/phase_wm/BBC_method_sintez/40change_ro=0.959_500.mp4"]
+    # PATH_VIDEO = [ r'D:/pythonProject/phase_wm/RealBarca.mp4']
+    PATH_VIDEO = ["D:/pythonProject/phase_wm/\BC_method_sintez/47change_ro=0.959_500.mp4"]
 
     # with open('change_sc.csv', 'r') as f:
     #     change_sc = list(csv.reader(f))[0]
@@ -721,7 +725,7 @@ if __name__ == '__main__':
     # change_sc = [eval(i) for i in change_sc]
 
     rand_k = 0
-    total_count = 467
+    total_count = 495
 
     hm_list = []
 
@@ -742,11 +746,9 @@ if __name__ == '__main__':
 
     # bitr = 5.4
     ampl = 1
-    for noise_lvl in [0]:
-        count_of_frames = read_video(PATH_VIDEO[0], "D:/phase_wm_graps/BBC/frames_orig_video")
-        embed(ampl, total_count,noise_lvl)
-        # for vbr in [15,10,5,2.5]:
-
+    count_of_frames = read_video(PATH_VIDEO[0], "D:/phase_wm_graps/BBC/frames_orig_video")
+    for nosi in [0, 3, 6, 9]:
+        embed(ampl, total_count, nosi)
         generate_video()
 
         stop_kadr1 = []
@@ -755,7 +757,7 @@ if __name__ == '__main__':
         print('GEN')
         path_extract_code = extract(0, 0.045)
         print("all")
-
+        print("noise = ", nosi, alfa, "current percent", stop_kadr1)
     hand_made = [0, 118, 404, 414, 524, 1002, 1391, 1492, 1972, 2393, 2466, total_count]
     exit_list = []
     res = np.zeros((65, 65))
@@ -783,7 +785,7 @@ if __name__ == '__main__':
     #     # print(compare(r"D:/phase_wm_graps/BBC\extract/after_normal_phas_bin/result" + str(i-1) + ".png"))
 
     print(PATH_VIDEO)
-    print("ampl", noise_lvl, alfa, "current percent", stop_kadr1)
+    print("noise = ", nosi, alfa, "current percent", stop_kadr1)
     # print("bitrate", bitr, ampl, teta, alfa, "current percent", stop_kadr1_bin)
     # print("bitrate", bitr, ampl, teta, alfa, "current percent", stop_kadr2_bin)
 
